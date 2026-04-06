@@ -16,30 +16,24 @@ Project cloud storage sederhana
 
 ## 📁 Struktur Folder
 ```
-nitip-data-drive/
-│
-├── client-side/
-│ ├── index.html
-│ └── Asset/
-│ ├── ui.css
-│ └── logic.js
-│
-├── server-side/
-│ ├── config.php
-│ ├── upload.php
-│ └── download.php
-│
-├── Storage/
-│ ├── node1/
-│ ├── node2/
-│ └── node3/
-│
-├── Database/
-│ └── blank.sql
-│
-├── Index.php
-└── README.md
-NOTE: struktur bisa berubah menyesuaikan kondisi lapangan
+└── 📁NitipDataDrive_(Distributed-File-Upload)
+    └── 📁client-side
+        └── 📁Asset
+            ├── logic.js
+            ├── ui.css
+        ├── index.html
+    └── 📁server-side
+        └── 📁Database
+            ├── blank.sql
+            ├── config.php
+        └── 📁Storage
+            └── 📁node1
+            └── 📁node2
+            └── 📁node3
+        ├── download.php
+        ├── Index.php
+        ├── upload.php
+    └── README.md
 ```
 ##  Penjelasan Struktur
 
