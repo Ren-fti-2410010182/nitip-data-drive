@@ -13,3 +13,30 @@ Project cloud storage sederhana berbasis PHP
 1. Copy ke htdocs
 2. Jalankan XAMPP
 3. Akses localhost
+
+## Flow Sistem
+
+        ┌─────────────┐
+        │    USER     │
+        └─────┬───────┘
+              ↓
+     ┌─────────────────┐
+     │  CLIENT-SIDE    │
+     │ (HTML, JS, CSS) │
+     └─────┬───────────┘
+           ↓
+     ┌─────────────────┐
+     │  SERVER-SIDE    │
+     │     (PHP)       │
+     └─────┬───────────┘
+           ↓
+   ┌───────────────┬───────────────┐
+   ↓               ↓               ↓
+[Node1]        [Node2]        [Node3]
+(Storage)     (Storage)     (Storage)
+
+           ↓
+     ┌─────────────┐
+     │  DATABASE   │
+     │   (MySQL)   │
+     └─────────────┘
