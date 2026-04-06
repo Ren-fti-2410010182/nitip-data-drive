@@ -13,8 +13,9 @@ Project cloud storage sederhana
 2. Jalankan XAMPP
 3. Akses localhost
 
-```
+
 ## 📁 Struktur Folder
+```
 nitip-data-drive/
 │
 ├── client-side/
@@ -40,7 +41,7 @@ nitip-data-drive/
 └── README.md
 NOTE: struktur bisa berubah menyesuaikan kondisi lapangan
 ```
-## 🧠 Penjelasan Struktur
+##  Penjelasan Struktur
 
 - **client-side/** → tampilan (HTML, CSS, JS)  
 - **server-side/** → backend PHP  
