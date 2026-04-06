@@ -13,6 +13,32 @@ Project cloud storage sederhana
 2. Jalankan XAMPP
 3. Akses localhost
 
+## 📁 Struktur Folder
+nitip-data-drive/
+│
+├── client-side/
+│   ├── index.html
+│   └── Asset/
+│       ├── ui.css
+│       └── logic.js
+│
+├── server-side/
+│   ├── config.php
+│   ├── upload.php
+│   └── download.php
+│
+├── Storage/
+│   ├── node1/
+│   ├── node2/
+│   └── node3/
+│
+├── Database/
+│   └── blank.sql
+│
+├── Index.php
+└── README.md
+NOTE: struktur bisa berubah menyesuaikan kondisi lapangan
+
 ## Penjelasan Singkat
 - User mengakses aplikasi melalui browser
 - Client-side mengirim request ke server
