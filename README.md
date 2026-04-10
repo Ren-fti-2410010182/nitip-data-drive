@@ -23,6 +23,9 @@ Project cloud storage sederhana
             ├── ui.css
         ├── index.html
     └── 📁server-side
+        └── 📁dashboard
+            ├── admin.php
+            ├── user.php
         └── 📁Database
             ├── blank.sql
             ├── config.php
@@ -30,8 +33,10 @@ Project cloud storage sederhana
             └── 📁node1
             └── 📁node2
             └── 📁node3
+        ├── delete.php
         ├── download.php
         ├── Index.php
+        ├── login.php
         ├── upload.php
     └── README.md
 ```
