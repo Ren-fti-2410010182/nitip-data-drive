@@ -151,6 +151,8 @@ MySQL Database
         ├── Index.html
         ├── Login.html
     └── 📁server
+        └── 📁backup
+            ├── data.sql
         └── 📁config
             ├── configAbout.md
             ├── db.js
@@ -196,6 +198,15 @@ Folder `Asset/` menyimpan file pendukung:
 ## **7.2 Folder server**
 
 Folder `server/` berisi seluruh backend aplikasi.
+
+---
+
+### `backup/`
+
+berisikan file data.sql yang untuk backup apabila terjadi kerusakan
+
+
+---
 
 ---
 
