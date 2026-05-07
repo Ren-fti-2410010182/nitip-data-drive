@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login — Nitip Data Drive</title>
+  <link rel="stylesheet" href="../styles/global.css">
+  <link rel="stylesheet" href="../styles/login.css">
+</head>
+<body>
+
+<div class="login-page">
+  <div class="login-card">
+    <div class="login-header">
+      <h1>Nitip Data Drive</h1>
+      <p>Sistem Penyimpanan Berkas Terdistribusi</p>
+    </div>
+
+    <div id="alert" class="alert"></div>
+
+    <div class="form-group">
+      <label for="username">Username</label>
+      <input type="text" id="username" class="form-control" placeholder="Masukkan username" autocomplete="username">
+    </div>
+
+    <div class="form-group">
+      <label for="password">Password</label>
+      <input type="password" id="password" class="form-control" placeholder="Masukkan password" autocomplete="current-password">
+    </div>
+
+    <button class="btn btn-primary btn-block" id="btnLogin" style="margin-top: 8px;">
+      Masuk
+    </button>
+
+    <div style="text-align: center; margin-top: 24px; font-size: 0.875rem; color: var(--text-muted);">
+      Belum punya akun? 
+      <a href="#" id="linkRegister" style="color: var(--primary); font-weight: 500; text-decoration: none;">Daftar di sini</a>
+    </div>
+
+    <!-- Panel Registrasi -->
+    <div id="registerPanel" style="display:none; margin-top:24px; padding-top:24px; border-top:1px solid var(--border-light);">
+      <h3 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 8px; text-align: center;">Buat Akun Baru</h3>
+      <p style="font-size: 0.8rem; color: var(--text-muted); text-align: center; margin-bottom: 16px;">
+        Akun akan disetujui oleh admin sebelum bisa login.
+      </p>
+
+      <div class="form-group">
+        <label for="regEmail">Email</label>
+        <input type="email" id="regEmail" class="form-control" placeholder="email@domain.com">
+      </div>
+      <div class="form-group">
+        <label for="regUsername">Username</label>
+        <input type="text" id="regUsername" class="form-control" placeholder="Min. 3 karakter">
+      </div>
+      <div class="form-group">
+        <label for="regPassword">Password</label>
+        <input type="password" id="regPassword" class="form-control" placeholder="Min. 6 karakter">
+      </div>
+      <button class="btn btn-success btn-block" id="btnRegister">
+        Daftar Sekarang
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+const alertBox      = document.getElementById('alert');
+const usernameInput = document.getElementById('username');
+const passwordInput = document.getElementById('password');
+const btnLogin      = document.getElementById('btnLogin');
+const linkRegister  = document.getElementById('linkRegister');
+const registerPanel = document.getElementById('registerPanel');
+
+function showAlert(message, type = 'error') {
+  alertBox.textContent  = message;
+  alertBox.className    = `alert alert-${type} show`;
+}
+
+function hideAlert() {
+  alertBox.className = 'alert';
+}
+
+linkRegister.addEventListener('click', (e) => {
+  e.preventDefault();
+  hideAlert();
+  const isHidden = registerPanel.style.display === 'none';
+  registerPanel.style.display = isHidden ? 'block' : 'none';
+  linkRegister.textContent = isHidden ? 'Kembali ke login' : 'Daftar di sini';
+});
+
+btnLogin.addEventListener('click', async () => {
+  const username = usernameInput.value.trim();
+  const password = passwordInput.value.trim();
+
+  if (!username || !password) {
+    return showAlert('Username dan password wajib diisi.');
+  }
+
+  btnLogin.disabled    = true;
+  btnLogin.textContent = 'Memverifikasi...';
+
+  try {
+    const response = await fetch('/api/auth/login', {
+      method  : 'POST',
+      headers : { 'Content-Type': 'application/json' },
+      body    : JSON.stringify({ username, password }),
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      localStorage.setItem('token',    data.token);
+      localStorage.setItem('username', data.user.username);
+      localStorage.setItem('role',     data.user.role);
+      localStorage.setItem('userId',   data.user.id);
+
+      showAlert('Login berhasil! Mengalihkan...', 'success');
+
+      setTimeout(() => {
+        window.location.href = data.user.role === 'admin' ? '/views/admin.html' : '/views/user.html';
+      }, 800);
+
+    } else {
+      showAlert(data.message || 'Login gagal. Periksa kembali kredensial Anda.');
+    }
+
+  } catch (networkErr) {
+    showAlert('Tidak dapat terhubung ke server. Pastikan server berjalan.');
+  } finally {
+    btnLogin.disabled    = false;
+    btnLogin.textContent = 'Masuk';
+  }
+});
+
+document.getElementById('btnRegister').addEventListener('click', async () => {
+  const email    = document.getElementById('regEmail').value.trim();
+  const username = document.getElementById('regUsername').value.trim();
+  const password = document.getElementById('regPassword').value.trim();
+
+  if (!email || !username || !password) {
+    return showAlert('Semua field registrasi wajib diisi.');
+  }
+
+  try {
+    const response = await fetch('/api/auth/register', {
+      method  : 'POST',
+      headers : { 'Content-Type': 'application/json' },
+      body    : JSON.stringify({ email, username, password, role: 'user' }),
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      showAlert('Permintaan pembuatan akun berhasil dikirim. Tunggu persetujuan admin.', 'success');
+      registerPanel.style.display = 'none';
+      linkRegister.textContent    = 'Daftar di sini';
+      document.getElementById('regEmail').value = '';
+      document.getElementById('regUsername').value = '';
+      document.getElementById('regPassword').value = '';
+    } else {
+      showAlert(data.message || 'Registrasi gagal.');
+    }
+
+  } catch (e) {
+    showAlert('Tidak dapat terhubung ke server.');
+  }
+});
+
+passwordInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') btnLogin.click();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Drive Saya — Nitip Data Drive</title>
+  <link rel="stylesheet" href="../styles/global.css">
+  <link rel="stylesheet" href="../styles/user.css">
+</head>
+<body>
+
+<div class="app-layout">
+  <!-- Sidebar -->
+  <aside class="app-sidebar">
+    <div class="app-brand">
+      <span style="font-size: 1.5rem;">📦</span> Nitip Drive
+    </div>
+    
+    <input type="file" id="fileInput" class="file-input-hidden">
+    <button class="btn-upload-new" id="btnUploadTrigger">
+      <span style="font-size: 1.25rem;">➕</span> Baru
+    </button>
+    
+    <nav class="nav-menu">
+      <div class="nav-item active">
+        <span>📂</span> Drive Saya
+      </div>
+    </nav>
+    
+    <div style="margin-top: auto; padding: 16px 0;">
+      <button class="btn btn-secondary btn-block" id="btnLogout" style="justify-content: flex-start; padding-left: 24px;">
+        🚪 Keluar
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="app-main">
+    <header class="app-header">
+      <div class="header-title">Drive Saya</div>
+      <div class="header-actions">
+        <span id="welcomeMsg" style="font-size: 0.875rem; color: var(--text-muted); font-weight: 500;"></span>
+      </div>
+    </header>
+
+    <div class="app-content" id="dropZone">
+      <div id="alert" class="alert"></div>
+
+      <!-- Search Bar -->
+      <div style="margin-bottom: 16px; display: flex; gap: 12px;">
+        <input type="text" id="searchInput" class="form-control" placeholder="🔍 Cari file..." style="max-width: 300px; padding: 8px 16px; border-radius: 20px; border: 1px solid var(--border-light); font-size: 0.9rem;">
+      </div>
+
+      <div id="fileContainer" style="height: 100%;">
+        <div id="noFilesMsg" class="empty-state" style="display: none;">
+          <div class="empty-state-icon">📭</div>
+          <h3>Tempat untuk semua file Anda</h3>
+          <p>Gunakan tombol "Baru" untuk mengunggah file.</p>
+        </div>
+        
+        <div id="fileGrid" class="file-grid" style="display:none;"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Drag & Drop Overlay -->
+<div id="dragOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(66, 133, 244, 0.9); z-index:9999; align-items:center; justify-content:center; color:white; font-size:2rem; font-weight:700; flex-direction:column; gap:16px;">
+  <span>☁️</span>
+  <span>Lepaskan file untuk mengunggah</span>
+</div>
+
+<!-- Upload Progress Overlay -->
+<div id="uploadOverlay" class="upload-overlay">
+  <div class="upload-overlay-header">
+    Mengunggah <span id="uploadFileName">...</span>
+  </div>
+  <div class="upload-overlay-body">
+    <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted);">
+      <span id="progressText">Memulai...</span>
+    </div>
+    <div class="progress-bar-container">
+      <div id="progressBar" class="progress-bar"></div>
+    </div>
+  </div>
+</div>
+
+<!-- View Modal Overlay -->
+<div id="viewModal" class="view-modal-overlay" onclick="if(event.target===this) closeViewModal()">
+  <div class="view-modal">
+    <div class="view-modal-header">
+      <div class="view-modal-title" id="viewModalTitle">Pratinjau File</div>
+      <button class="view-modal-close" onclick="closeViewModal()">×</button>
+    </div>
+    <div class="view-modal-body" id="viewModalBody"></div>
+  </div>
+</div>
+
+<script>
+const token = localStorage.getItem('token');
+const role  = localStorage.getItem('role');
+
+if (!token) {
+  window.location.href = '/views/login.html';
+}
+
+document.getElementById('welcomeMsg').textContent = `${localStorage.getItem('username')}`;
+
+const alertBox = document.getElementById('alert');
+function showAlert(msg, type = 'error') {
+  alertBox.textContent = msg;
+  alertBox.className   = `alert alert-${type} show`;
+  setTimeout(() => { alertBox.className = 'alert'; }, 4000);
+}
+
+function authHeader() {
+  return { 'Authorization': `Bearer ${token}` };
+}
+
+/**
+ * Memformat ukuran byte menjadi string yang mudah dibaca.
+ * @param {number} bytes - Ukuran file dalam byte.
+ * @returns {string} String format ukuran (KB, MB, GB).
+ */
+function formatSize(bytes) {
+  if (bytes < 1024)           return `${bytes} B`;
+  if (bytes < 1024 * 1024)    return `${(bytes / 1024).toFixed(1)} KB`;
+  if (bytes < 1024 ** 3)      return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
+  return `${(bytes / 1024 ** 3).toFixed(2)} GB`;
+}
+
+/**
+ * Mendapatkan ikon emoji berdasarkan MIME type file.
+ * @param {string} mimeType - Tipe MIME file.
+ * @returns {string} Karakter emoji ikon.
+ */
+function getFileIcon(mimeType) {
+  if (mimeType.startsWith('image/')) return '🖼️';
+  if (mimeType.includes('pdf')) return '📄';
+  if (mimeType.includes('word') || mimeType.includes('document')) return '📝';
+  if (mimeType.includes('sheet') || mimeType.includes('excel')) return '📊';
+  if (mimeType.includes('zip') || mimeType.includes('rar') || mimeType.includes('7z')) return '📦';
+  if (mimeType.includes('text') || mimeType.includes('plain')) return '📃';
+  if (mimeType.includes('csv')) return '📈';
+  return '📎';
+}
+
+/**
+ * Memuat semua file pengguna dan menampilkannya di Grid.
+ * Juga menangani pengambilan thumbnail otomatis untuk gambar.
+ */
+async function loadFiles() {
+  const fileGrid = document.getElementById('fileGrid');
+  const noFilesMsg = document.getElementById('noFilesMsg');
+
+  try {
+    const resp  = await fetch('/api/files', { headers: authHeader() });
+    const data  = await resp.json();
+
+    if (!data.success || data.files.length === 0) {
+      fileGrid.style.display = 'none';
+      noFilesMsg.style.display = 'flex';
+      return;
+    }
+
+    noFilesMsg.style.display = 'none';
+    fileGrid.style.display = 'grid';
+    fileGrid.innerHTML = '';
+
+    data.files.forEach((file) => {
+      const date = new Date(file.uploaded_at).toLocaleDateString('id-ID', {
+        day: 'numeric', month: 'short', year: 'numeric'
+      });
+
+      const isImage = file.mime_type.startsWith('image/');
+      const iconHTML = isImage 
+        ? `<div class="file-thumb" id="thumb-${file.id}" style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:var(--text-muted); font-size:0.8rem;">Memuat...</div>`
+        : `<span class="file-icon">${getFileIcon(file.mime_type)}</span>`;
+
+      const fileCard = document.createElement('div');
+      fileCard.className = 'file-card';
+      fileCard.dataset.name = file.original_name.toLowerCase(); // Untuk search filter
+      fileCard.innerHTML = `
+        <div class="file-card-top" style="overflow:hidden;">${iconHTML}</div>
+        <div class="file-name" title="${file.original_name}">${file.original_name}</div>
+        <div class="file-meta">${formatSize(file.file_size)} • ${date}</div>
+        <div class="file-card-actions">
+          <button class="btn btn-primary btn-block" onclick="viewFile(${file.id}, '${file.mime_type}', '${file.original_name.replace(/'/g, "\\'")}')" style="font-size: 0.75rem; padding: 6px;">👁 Lihat</button>
+          <button class="btn btn-secondary btn-block" onclick="downloadFile(${file.id}, '${file.original_name.replace(/'/g, "\\'")}')" style="font-size: 0.75rem; padding: 6px;">⬇ Unduh</button>
+        </div>
+      `;
+      fileGrid.appendChild(fileCard);
+
+      // Async fetch untuk thumbnail gambar agar preview langsung terlihat
+      if (isImage) {
+        fetch(`/api/files/download?id=${file.id}`, { headers: authHeader() })
+          .then(r => r.blob())
+          .then(blob => {
+            const url = URL.createObjectURL(blob);
+            document.getElementById(`thumb-${file.id}`).innerHTML = `<img src="${url}" style="width:100%; height:100%; object-fit:cover; display:block;">`;
+          })
+          .catch(() => {
+            document.getElementById(`thumb-${file.id}`).innerHTML = `<span class="file-icon">🖼️</span>`;
+          });
+      }
+    });
+
+    // Panggil filter ulang jika ada teks di pencarian saat direload
+    filterFiles();
+
+  } catch (e) {
+    console.error('Error loading files:', e);
+    noFilesMsg.innerHTML = '<div class="empty-state-icon">❌</div><h3>Gagal memuat file</h3>';
+    noFilesMsg.style.display = 'flex';
+    fileGrid.style.display = 'none';
+  }
+}
+
+// ── FITUR PENCARIAN / FILTER ──
+const searchInput = document.getElementById('searchInput');
+searchInput.addEventListener('input', filterFiles);
+
+/**
+ * Menyaring tampilan kartu file berdasarkan input teks.
+ */
+function filterFiles() {
+  const query = searchInput.value.toLowerCase();
+  const cards = document.querySelectorAll('.file-card');
+  let visibleCount = 0;
+  cards.forEach(card => {
+    if (card.dataset.name.includes(query)) {
+      card.style.display = 'flex';
+      visibleCount++;
+    } else {
+      card.style.display = 'none';
+    }
+  });
+  
+  const noFilesMsg = document.getElementById('noFilesMsg');
+  if (visibleCount === 0 && cards.length > 0) {
+    noFilesMsg.style.display = 'flex';
+    noFilesMsg.querySelector('h3').textContent = 'File tidak ditemukan';
+    noFilesMsg.querySelector('p').textContent = `Tidak ada file yang cocok dengan "${query}"`;
+  } else if (cards.length > 0) {
+    noFilesMsg.style.display = 'none';
+  }
+}
+
+// ── FUNGSI DOWNLOAD & VIEW ──
+/**
+ * Mengunduh file dengan ID yang diberikan ke perangkat lokal.
+ * @param {number} fileId - ID file dari database.
+ * @param {string} originalName - Nama file asli untuk fallback download name.
+ */
+async function downloadFile(fileId, originalName) {
+  try {
+    const resp = await fetch(`/api/files/download?id=${fileId}`, {
+      headers: authHeader(),
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json();
+      return showAlert(err.message || 'Gagal mengunduh file.');
+    }
+
+    const disposition = resp.headers.get('Content-Disposition');
+    let fileName = originalName || 'download';
+    if (disposition) {
+      const match = disposition.match(/filename="?([^"]+)"?/);
+      if (match) fileName = decodeURIComponent(match[1]);
+    }
+
+    const blob    = await resp.blob();
+    const blobUrl = URL.createObjectURL(blob);
+
+    const link    = document.createElement('a');
+    link.href     = blobUrl;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+
+  } catch (e) {
+    showAlert('Terjadi kesalahan saat mengunduh file.');
+  }
+}
+
+/**
+ * Membuka file secara langsung di dalam modal (Preview).
+ * @param {number} fileId - ID file.
+ * @param {string} mimeType - Tipe MIME file untuk menentukan cara menampilkannya.
+ * @param {string} fileName - Nama file.
+ */
+async function viewFile(fileId, mimeType, fileName) {
+  const modal = document.getElementById('viewModal');
+  const modalTitle = document.getElementById('viewModalTitle');
+  const modalBody = document.getElementById('viewModalBody');
+  
+  modalTitle.textContent = 'Memuat...';
+  modalBody.innerHTML = '<div style="color:var(--text-muted)">Memuat pratinjau...</div>';
+  modal.classList.add('show');
+  
+  try {
+    const resp = await fetch(`/api/files/download?id=${fileId}`, { headers: authHeader() });
+    if (!resp.ok) {
+      modalBody.innerHTML = '<div style="color:var(--danger)">Gagal memuat file.</div>';
+      return;
+    }
+    
+    modalTitle.textContent = fileName;
+    const blob = await resp.blob();
+    const url = URL.createObjectURL(blob);
+    
+    if (mimeType.startsWith('image/')) {
+      modalBody.innerHTML = `<img src="${url}" class="view-modal-content" style="object-fit:contain;">`;
+    } else if (mimeType === 'application/pdf') {
+      modalBody.innerHTML = `<iframe src="${url}" class="view-modal-content" style="width:100%; height:100%; border:none;"></iframe>`;
+    } else if (mimeType.startsWith('text/') || mimeType.includes('csv') || mimeType === 'application/json') {
+      const text = await blob.text();
+      modalBody.innerHTML = `<div class="view-modal-text">${text.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>`;
+    } else {
+      modalBody.innerHTML = `<div style="text-align:center; color:var(--text-muted)">
+        <div style="font-size:3rem; margin-bottom:16px;">📄</div>
+        Pratinjau tidak tersedia untuk tipe file ini.<br><br>
+        <button class="btn btn-primary" style="margin-top: 16px;" onclick="downloadFile(${fileId}, '${fileName.replace(/'/g, "\\'")}')">Unduh File</button>
+      </div>`;
+    }
+    
+  } catch (e) {
+    modalBody.innerHTML = '<div style="color:var(--danger)">Terjadi kesalahan.</div>';
+  }
+}
+
+function closeViewModal() {
+  document.getElementById('viewModal').classList.remove('show');
+  document.getElementById('viewModalBody').innerHTML = ''; // Kosongkan untuk menghindari memory leak objek URL
+}
+
+// ── UPLOAD FILE ──
+const fileInput   = document.getElementById('fileInput');
+const btnUploadTrigger = document.getElementById('btnUploadTrigger');
+const uploadOverlay = document.getElementById('uploadOverlay');
+const uploadFileName = document.getElementById('uploadFileName');
+const progressBar = document.getElementById('progressBar');
+const progressText = document.getElementById('progressText');
+
+btnUploadTrigger.addEventListener('click', () => fileInput.click());
+
+fileInput.addEventListener('change', () => {
+  if (fileInput.files.length > 0) {
+    const file = fileInput.files[0];
+    uploadFile(file);
+  }
+});
+
+/**
+ * Memproses unggahan file menggunakan XMLHttpRequest agar bisa memantau proses _upload_ (progress bar).
+ * @param {File} file - Objek file native dari browser.
+ */
+function uploadFile(file) {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  uploadOverlay.style.display = 'block';
+  uploadFileName.textContent = file.name;
+  progressBar.style.width = '0%';
+  progressText.textContent = 'Memulai...';
+
+  const xhr = new XMLHttpRequest();
+
+  xhr.upload.addEventListener('progress', (e) => {
+    if (e.lengthComputable) {
+      const pct = Math.round((e.loaded / e.total) * 100);
+      progressBar.style.width = pct + '%';
+      progressText.textContent = `${pct}% selesai`;
+    }
+  });
+
+  xhr.addEventListener('load', () => {
+    const data = JSON.parse(xhr.responseText);
+    
+    setTimeout(() => { uploadOverlay.style.display = 'none'; }, 2000);
+
+    if (data.success) {
+      progressText.textContent = 'Berhasil diunggah!';
+      progressBar.style.background = 'var(--success)';
+      fileInput.value = '';
+      loadFiles(); 
+    } else {
+      progressText.textContent = 'Upload gagal.';
+      progressBar.style.background = 'var(--danger)';
+      showAlert(data.message || 'Upload gagal.');
+    }
+  });
+
+  xhr.addEventListener('error', () => {
+    progressText.textContent = 'Koneksi terputus.';
+    progressBar.style.background = 'var(--danger)';
+    setTimeout(() => { uploadOverlay.style.display = 'none'; }, 3000);
+    showAlert('Koneksi terputus saat mengunggah.');
+  });
+
+  xhr.open('POST', '/api/files/upload');
+  xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+  xhr.send(formData);
+}
+
+// ── DRAG AND DROP FEATURE ──
+const dragOverlay = document.getElementById('dragOverlay');
+
+// Menangani kejadian drag masuk dan keluar dari jendela browser
+window.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  dragOverlay.style.display = 'flex';
+});
+
+window.addEventListener('dragleave', (e) => {
+  e.preventDefault();
+  // Hanya sembunyikan jika pointer benar-benar keluar dari jendela
+  if (e.relatedTarget === null || e.clientX === 0 || e.clientY === 0) {
+    dragOverlay.style.display = 'none';
+  }
+});
+
+window.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dragOverlay.style.display = 'none';
+  if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+    // Unggah file pertama yang dijatuhkan (saat ini mendukung 1 file per unggahan di sistem)
+    uploadFile(e.dataTransfer.files[0]);
+  }
+});
+
+// ── LOGOUT ──
+document.getElementById('btnLogout').addEventListener('click', async () => {
+  await fetch('/api/auth/logout', {
+    method  : 'POST',
+    headers : authHeader(),
+  });
+  localStorage.clear();
+  window.location.href = '/views/login.html';
+});
+
+loadFiles();
+</script>
+</body>
+</html>

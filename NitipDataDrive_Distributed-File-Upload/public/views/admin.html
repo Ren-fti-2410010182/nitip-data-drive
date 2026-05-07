@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard — Nitip Data Drive</title>
+  <link rel="stylesheet" href="../styles/global.css">
+  <link rel="stylesheet" href="../styles/admin.css">
+</head>
+<body>
+
+<div class="admin-layout">
+  <!-- Slim Sidebar -->
+  <div class="admin-sidebar">
+    <div class="admin-brand">⚙️</div>
+    <div class="admin-nav-item active" title="Dashboard">📊</div>
+    <div style="margin-top: auto;">
+      <div class="admin-nav-item" id="btnLogout" title="Keluar" style="color: var(--danger);">🚪</div>
+    </div>
+  </div>
+
+  <div class="admin-main">
+    <div class="admin-header">
+      <div class="header-title">Admin Panel</div>
+      <div class="header-actions">
+        <span id="welcomeMsg" style="font-size: 0.875rem; color: var(--text-muted); font-weight: 500;"></span>
+      </div>
+    </div>
+
+    <!-- Alert Container -->
+    <div style="padding: 16px 16px 0 16px;">
+       <div id="alert" class="alert" style="margin: 0;"></div>
+    </div>
+
+    <!-- Grid Layout 100vh -->
+    <div class="admin-grid">
+      
+      <!-- Left Panel: Create Account -->
+      <div class="admin-panel">
+        <div class="panel-header">
+          <span>➕ Buat Akun</span>
+        </div>
+        <div class="panel-body">
+          <div class="form-group">
+            <label for="createEmail">Email</label>
+            <input type="email" id="createEmail" class="form-control" placeholder="email@domain.com">
+          </div>
+          <div class="form-group">
+            <label for="createUsername">Username</label>
+            <input type="text" id="createUsername" class="form-control" placeholder="Min. 3 karakter">
+          </div>
+          <div class="form-group">
+            <label for="createPassword">Password</label>
+            <input type="password" id="createPassword" class="form-control" placeholder="Min. 6 karakter">
+          </div>
+          <div class="form-group">
+            <label for="createRole">Peran Akun</label>
+            <select id="createRole" class="form-control">
+              <option value="user">User</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+          <button class="btn btn-success btn-block" id="btnCreateUser" style="margin-top: 8px;">Buat Akun</button>
+        </div>
+      </div>
+
+      <!-- Right Panels: Users & Files -->
+      <div class="right-panels">
+        
+        <!-- Users Table Panel -->
+        <div class="admin-panel">
+          <div class="panel-header">
+            <span>👥 Manajemen Pengguna</span>
+            <button class="btn btn-secondary" onclick="loadUsers()" style="padding: 4px 12px; font-size: 0.75rem;">🔄 Segarkan</button>
+          </div>
+          <div class="panel-body" style="padding: 0;">
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Username</th>
+                    <th>Email</th>
+                    <th>Peran</th>
+                    <th>Status</th>
+                    <th>Terdaftar</th>
+                    <th>Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="userTableBody">
+                  <tr><td colspan="6" style="text-align:center">Memuat...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Files Table Panel -->
+        <div class="admin-panel">
+          <div class="panel-header">
+            <span>📦 Manajemen Berkas</span>
+            <button class="btn btn-secondary" onclick="loadFiles()" style="padding: 4px 12px; font-size: 0.75rem;">🔄 Segarkan</button>
+          </div>
+          <div class="panel-body" style="padding: 0;">
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Nama File</th>
+                    <th>Ukuran</th>
+                    <th>Tipe</th>
+                    <th>Pengunggah</th>
+                    <th>Tanggal</th>
+                    <th>Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="fileTableBody">
+                  <tr><td colspan="6" style="text-align:center">Memuat...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- View Modal Overlay -->
+<div id="viewModal" class="view-modal-overlay" onclick="if(event.target===this) closeViewModal()">
+  <div class="view-modal">
+    <div class="view-modal-header">
+      <div class="view-modal-title" id="viewModalTitle">Pratinjau File</div>
+      <button class="view-modal-close" onclick="closeViewModal()">×</button>
+    </div>
+    <div class="view-modal-body" id="viewModalBody"></div>
+  </div>
+</div>
+
+<!-- Edit User Modal -->
+<div id="editUserModal" class="view-modal-overlay" onclick="if(event.target===this) closeEditUserModal()">
+  <div class="view-modal" style="max-width: 400px; padding: 24px;">
+    <div class="view-modal-header" style="border:none; padding:0 0 16px 0;">
+      <h3 style="margin:0;">Edit Pengguna</h3>
+      <button class="view-modal-close" onclick="closeEditUserModal()">×</button>
+    </div>
+    <div class="form-group">
+      <label>Username</label>
+      <input type="text" id="editUsername" class="form-control">
+    </div>
+    <div class="form-group">
+      <label>Email</label>
+      <input type="email" id="editEmail" class="form-control">
+    </div>
+    <input type="hidden" id="editUserId">
+    <button class="btn btn-primary btn-block" onclick="saveUserEdit()">Simpan Perubahan</button>
+  </div>
+</div>
+
+<script>
+const token    = localStorage.getItem('token');
+const role     = localStorage.getItem('role');
+const username = localStorage.getItem('username');
+
+if (!token || role !== 'admin') {
+  alert('Akses ditolak. Anda tidak memiliki izin untuk mengakses halaman ini.');
+  window.location.href = '/views/login.html';
+}
+
+document.getElementById('welcomeMsg').textContent = `Admin: ${username}`;
+
+const alertBox = document.getElementById('alert');
+function showAlert(msg, type = 'error') {
+  alertBox.textContent = msg;
+  alertBox.className   = `alert alert-${type} show`;
+  setTimeout(() => { alertBox.className = 'alert'; }, 4000);
+}
+
+// ── Fungsi Utilitas ──
+
+/**
+ * Mengambil header Authorization yang berisi token Bearer.
+ * @returns {Object}
+ */
+function authHeader() {
+  return { 'Authorization': `Bearer ${token}` };
+}
+
+const createEmailInput     = document.getElementById('createEmail');
+const createUsernameInput  = document.getElementById('createUsername');
+const createPasswordInput  = document.getElementById('createPassword');
+const createRoleSelect     = document.getElementById('createRole');
+const btnCreateUser        = document.getElementById('btnCreateUser');
+
+// ── Manajemen Akun Pengguna ──
+
+btnCreateUser.addEventListener('click', createUser);
+
+/**
+ * Mengirim request untuk membuat akun baru.
+ */
+
+async function createUser() {
+  const email    = createEmailInput.value.trim();
+  const username = createUsernameInput.value.trim();
+  const password = createPasswordInput.value.trim();
+  const role     = createRoleSelect.value;
+
+  if (!email || !username || !password) {
+    return showAlert('Semua field pembuatan akun wajib diisi.');
+  }
+
+  try {
+    const resp = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...authHeader(),
+      },
+      body: JSON.stringify({ email, username, password, role }),
+    });
+
+    const data = await resp.json();
+    if (data.success) {
+      showAlert('Akun baru berhasil dibuat.', 'success');
+      createEmailInput.value = '';
+      createUsernameInput.value = '';
+      createPasswordInput.value = '';
+      loadUsers();
+      return;
+    }
+
+    showAlert(data.message || 'Gagal membuat akun.');
+  } catch (e) {
+    showAlert('Tidak dapat terhubung ke server.');
+  }
+}
+
+async function approveUser(userId, username) {
+  if (!confirm(`Setujui akun "${username}"?`)) return;
+  try {
+    const resp = await fetch(`/api/users/approve?id=${userId}`, { method: 'POST', headers: authHeader() });
+    const data = await resp.json();
+    if (data.success) { showAlert(`Akun "${username}" berhasil disetujui.`, 'success'); loadUsers(); }
+    else showAlert(data.message || 'Gagal menyetujui akun.');
+  } catch (e) { showAlert('Terjadi kesalahan jaringan.'); }
+}
+
+async function rejectUser(userId, username) {
+  if (!confirm(`Tolak akun "${username}"?`)) return;
+  try {
+    const resp = await fetch(`/api/users/reject?id=${userId}`, { method: 'POST', headers: authHeader() });
+    const data = await resp.json();
+    if (data.success) { showAlert(`Permintaan akun "${username}" ditolak.`, 'success'); loadUsers(); }
+    else showAlert(data.message || 'Gagal menolak akun.');
+  } catch (e) { showAlert('Terjadi kesalahan jaringan.'); }
+}
+
+function formatSize(bytes) {
+  if (bytes < 1024)        return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
+}
+
+// ── Muat Daftar Pengguna ──
+async function loadUsers() {
+  const tbody = document.getElementById('userTableBody');
+  try {
+    const resp = await fetch('/api/users', { headers: authHeader() });
+    const data = await resp.json();
+
+    if (!data.success) {
+      tbody.innerHTML = `<tr><td colspan="6" style="color:var(--danger); text-align:center">${data.message}</td></tr>`;
+      return;
+    }
+
+    const myId = localStorage.getItem('userId');
+    tbody.innerHTML = '';
+
+    data.users.forEach((user) => {
+      const date = new Date(user.created_at).toLocaleDateString('id-ID');
+      
+      let statusHTML = '';
+      if (user.status === 'pending') {
+        statusHTML = '<span class="badge badge-pending">Menunggu</span>';
+      } else {
+        const isSelf = user.id == myId;
+        const rejectedOpt = user.status === 'rejected' ? '<option value="rejected" selected>Ditolak</option>' : '';
+        statusHTML = `<select class="form-control" style="padding: 4px; font-size: 0.8rem; height: auto;" onchange="updateUserStatus(${user.id}, this.value)" ${isSelf ? 'disabled' : ''}>
+          ${rejectedOpt}
+          <option value="active" ${user.status === 'active' ? 'selected' : ''}>Aktif</option>
+          <option value="disabled" ${user.status === 'disabled' ? 'selected' : ''}>Nonaktif</option>
+        </select>`;
+      }
+
+      let roleBadge = user.role === 'admin' ? '<span class="badge badge-admin">Admin</span>' : '<span class="badge badge-user">User</span>';
+
+      let actionsHTML = '';
+      if (user.id != myId) {
+        if (user.status === 'pending') {
+          actionsHTML += `<button class="btn-icon" style="color: var(--success);" title="Setujui" onclick="approveUser(${user.id}, '${user.username}')">✓</button>`;
+          actionsHTML += `<button class="btn-icon danger" title="Tolak" onclick="rejectUser(${user.id}, '${user.username}')">✕</button>`;
+        }
+        actionsHTML += `<button class="btn-icon" style="color: var(--primary);" title="Edit" onclick="openEditUserModal(${user.id}, '${user.username}', '${user.email}')">✏️</button>`;
+        actionsHTML += `<button class="btn-icon danger" title="Hapus" onclick="deleteUser(${user.id}, '${user.username}')">🗑</button>`;
+      } else {
+        actionsHTML += `<button class="btn-icon" style="color: var(--primary);" title="Edit" onclick="openEditUserModal(${user.id}, '${user.username}', '${user.email}')">✏️</button>`;
+      }
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td style="font-weight: 500; color: var(--primary);">${user.username}</td>
+        <td>${user.email}</td>
+        <td>${roleBadge}</td>
+        <td>${statusHTML}</td>
+        <td>${date}</td>
+        <td style="display:flex; gap:4px;">${actionsHTML}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  } catch (e) {
+    tbody.innerHTML = '<tr><td colspan="6" style="color:var(--danger); text-align:center">Gagal memuat pengguna.</td></tr>';
+  }
+}
+
+/**
+ * Memperbarui status via combobox
+ */
+async function updateUserStatus(userId, newStatus) {
+  try {
+    const resp = await fetch(`/api/users/update?id=${userId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeader() },
+      body: JSON.stringify({ status: newStatus })
+    });
+    const data = await resp.json();
+    if (data.success) showAlert('Status berhasil diperbarui.', 'success');
+    else { showAlert(data.message); loadUsers(); }
+  } catch(e) { showAlert('Gagal mengubah status.'); loadUsers(); }
+}
+
+/**
+ * Logika Edit User
+ */
+function openEditUserModal(id, username, email) {
+  document.getElementById('editUserId').value = id;
+  document.getElementById('editUsername').value = username;
+  document.getElementById('editEmail').value = email;
+  document.getElementById('editUserModal').classList.add('show');
+}
+
+function closeEditUserModal() {
+  document.getElementById('editUserModal').classList.remove('show');
+}
+
+async function saveUserEdit() {
+  const id = document.getElementById('editUserId').value;
+  const username = document.getElementById('editUsername').value.trim();
+  const email = document.getElementById('editEmail').value.trim();
+  
+  if (!username || !email) return showAlert('Username dan email wajib diisi.');
+  
+  try {
+    const resp = await fetch(`/api/users/update?id=${id}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeader() },
+      body: JSON.stringify({ username, email })
+    });
+    const data = await resp.json();
+    if (data.success) {
+      showAlert('Data berhasil diperbarui.', 'success');
+      closeEditUserModal();
+      loadUsers();
+      if (id == localStorage.getItem('userId')) {
+        document.getElementById('welcomeMsg').textContent = `Admin: ${username}`;
+        localStorage.setItem('username', username);
+      }
+    } else showAlert(data.message);
+  } catch(e) { showAlert('Terjadi kesalahan jaringan.'); }
+}
+
+/**
+ * Menghapus pengguna secara permanen.
+ */
+async function deleteUser(userId, uname) {
+  if (!confirm(`Hapus pengguna "${uname}"?\n\nSemua file milik pengguna ini juga akan terhapus.`)) return;
+  try {
+    const resp = await fetch(`/api/users?id=${userId}`, { method: 'DELETE', headers: authHeader() });
+    const data = await resp.json();
+    if (data.success) { showAlert(`Pengguna "${uname}" berhasil dihapus.`, 'success'); loadUsers(); loadFiles(); }
+    else showAlert(data.message || 'Gagal menghapus pengguna.');
+  } catch (e) { showAlert('Terjadi kesalahan jaringan.'); }
+}
+
+// ── Muat Daftar File ──
+async function loadFiles() {
+  const tbody = document.getElementById('fileTableBody');
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center">Memuat...</td></tr>';
+  try {
+    const resp = await fetch('/api/files', { headers: authHeader() });
+    const data = await resp.json();
+
+    if (!data.success || data.files.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-muted)">Tidak ada file.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = '';
+    data.files.forEach((file) => {
+      const date = new Date(file.uploaded_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+      const ext = file.mime_type.split('/')[1]?.toUpperCase() || '?';
+      
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td title="${file.original_name}" style="max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight: 500;">${file.original_name}</td>
+        <td>${formatSize(file.file_size)}</td>
+        <td><span class="badge" style="background:var(--surface-variant); color:var(--text); border:1px solid var(--border-light)">${ext}</span></td>
+        <td>${file.uploader}</td>
+        <td>${date}</td>
+        <td style="display:flex; gap:4px;">
+          <button class="btn-icon" title="Lihat" onclick="viewFile(${file.id}, '${file.mime_type}', '${file.original_name.replace(/'/g, "\\'")}')">👁</button>
+          <button class="btn-icon" title="Unduh" onclick="downloadFile(${file.id}, '${file.original_name.replace(/'/g, "\\'")}')">⬇</button>
+          <button class="btn-icon danger" title="Hapus" onclick="deleteFile(${file.id}, '${file.original_name.replace(/'/g, "\\'")}')">🗑</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  } catch (e) {
+    tbody.innerHTML = '<tr><td colspan="6" style="color:var(--danger); text-align:center">Gagal memuat file.</td></tr>';
+  }
+}
+
+async function downloadFile(fileId, originalName) {
+  try {
+    const resp = await fetch(`/api/files/download?id=${fileId}`, { headers: authHeader() });
+    if (!resp.ok) return showAlert('Gagal mengunduh file.');
+
+    const disposition = resp.headers.get('Content-Disposition');
+    let fileName = originalName || 'file_download';
+    if (disposition) {
+      const m = disposition.match(/filename="?([^"]+)"?/);
+      if (m) fileName = decodeURIComponent(m[1]);
+    }
+
+    const blob = await resp.blob();
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = fileName;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+  } catch (e) {
+    showAlert('Error saat mengunduh.');
+  }
+}
+
+async function viewFile(fileId, mimeType, fileName) {
+  const modal = document.getElementById('viewModal');
+  const modalTitle = document.getElementById('viewModalTitle');
+  const modalBody = document.getElementById('viewModalBody');
+  
+  modalTitle.textContent = 'Memuat...';
+  modalBody.innerHTML = '<div style="color:var(--text-muted)">Memuat pratinjau...</div>';
+  modal.classList.add('show');
+  
+  try {
+    const resp = await fetch(`/api/files/download?id=${fileId}`, { headers: authHeader() });
+    if (!resp.ok) {
+      modalBody.innerHTML = '<div style="color:var(--danger)">Gagal memuat file.</div>';
+      return;
+    }
+    
+    modalTitle.textContent = fileName;
+    const blob = await resp.blob();
+    const url = URL.createObjectURL(blob);
+    
+    if (mimeType.startsWith('image/')) {
+      modalBody.innerHTML = `<img src="${url}" class="view-modal-content" style="object-fit:contain;">`;
+    } else if (mimeType === 'application/pdf') {
+      modalBody.innerHTML = `<iframe src="${url}" class="view-modal-content" style="width:100%; height:100%; border:none;"></iframe>`;
+    } else if (mimeType.startsWith('text/') || mimeType.includes('csv') || mimeType === 'application/json') {
+      const text = await blob.text();
+      modalBody.innerHTML = `<div class="view-modal-text">${text.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>`;
+    } else {
+      modalBody.innerHTML = `<div style="text-align:center; color:var(--text-muted)">
+        <div style="font-size:3rem; margin-bottom:16px;">📄</div>
+        Pratinjau tidak tersedia untuk tipe file ini.<br><br>
+        <button class="btn btn-primary" style="margin-top: 16px;" onclick="downloadFile(${fileId}, '${fileName.replace(/'/g, "\\'")}')">Unduh File</button>
+      </div>`;
+    }
+    
+  } catch (e) {
+    modalBody.innerHTML = '<div style="color:var(--danger)">Terjadi kesalahan.</div>';
+  }
+}
+
+function closeViewModal() {
+  document.getElementById('viewModal').classList.remove('show');
+  document.getElementById('viewModalBody').innerHTML = ''; // Kosongkan untuk mencegah memory leak
+}
+
+async function deleteFile(fileId, fileName) {
+  if (!confirm(`Hapus file "${fileName}"?`)) return;
+  try {
+    const resp = await fetch(`/api/files?id=${fileId}`, { method: 'DELETE', headers: authHeader() });
+    const data = await resp.json();
+    if (data.success) { showAlert('File berhasil dihapus.', 'success'); loadFiles(); }
+    else showAlert(data.message || 'Gagal menghapus file.');
+  } catch (e) { showAlert('Terjadi kesalahan.'); }
+}
+
+// ── Logout ──
+document.getElementById('btnLogout').addEventListener('click', async () => {
+  await fetch('/api/auth/logout', { method: 'POST', headers: authHeader() });
+  localStorage.clear();
+  window.location.href = '/views/login.html';
+});
+
+loadUsers();
+loadFiles();
+</script>
+</body>
+</html>

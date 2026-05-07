@@ -1,0 +1,17 @@
+{
+  "name": "nitipdatadrive_distributed-file-upload",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server/src/app.js",
+  "scripts": {
+    "start": "node server/src/app.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "mysql": "^2.18.1"
+  }
+}
