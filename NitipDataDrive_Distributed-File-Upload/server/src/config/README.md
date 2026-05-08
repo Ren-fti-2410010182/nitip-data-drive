@@ -1,13 +1,47 @@
 # Config Folder
 
-Folder `server/src/config/` menyimpan konfigurasi backend.
+Folder `server/src/config/` menyimpan konfigurasi koneksi database aplikasi.
+
+---
 
 ## File
 
-- `database.js` - mengatur pool koneksi MySQL dan fungsi query.
+### `database.js` — Pool Koneksi MySQL
 
-## Fungsi
+Mengatur koneksi ke database MySQL menggunakan **connection pool** untuk efisiensi. Pool memungkinkan beberapa request berbagi koneksi yang sudah ada alih-alih membuat koneksi baru setiap saat.
 
-- Menyediakan satu titik konfigurasi database.
-- Menggunakan pool sehingga koneksi dapat dipakai ulang antar request.
-- Mengekspos fungsi `query(sql, params)` untuk dipakai oleh controller.
+**Konfigurasi default:**
+
+| Parameter | Nilai |
+|---|---|
+| `host` | `localhost` |
+| `port` | `3306` |
+| `user` | `root` |
+| `password` | *(kosong)* |
+| `database` | `nitip_data_drive` |
+| `connectionLimit` | `10` |
+| `charset` | `UTF8MB4` |
+| `timezone` | `+07:00` (WIB) |
+
+**Fungsi yang diekspor:**
+
+```js
+db.query(sql, params)  →  Promise<results>
+```
+
+Contoh penggunaan di controller:
+```js
+const rows = await db.query('SELECT * FROM users WHERE id = ?', [userId]);
+```
+
+---
+
+## Cara Mengubah Konfigurasi
+
+Edit nilai di `database.js` langsung. Untuk produksi, disarankan membaca nilai dari environment variable:
+
+```js
+host: process.env.DB_HOST || 'localhost',
+user: process.env.DB_USER || 'root',
+password: process.env.DB_PASS || '',
+```

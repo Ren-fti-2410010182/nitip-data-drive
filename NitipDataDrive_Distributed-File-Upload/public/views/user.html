@@ -17,12 +17,15 @@
     </div>
     
     <input type="file" id="fileInput" class="file-input-hidden">
-    <button class="btn-upload-new" id="btnUploadTrigger">
-      <span style="font-size: 1.25rem;">➕</span> Baru
+    <button class="btn-upload-new" id="btnUploadTrigger" style="width: 100%; margin-bottom: 8px;">
+      <span style="font-size: 1.25rem;">➕</span> Unggah File
+    </button>
+    <button class="btn-upload-new" id="btnCreateFolder" style="width: 100%; margin-bottom: 24px; background-color: var(--surface-variant);">
+      <span style="font-size: 1.25rem;">📁</span> Buat Folder
     </button>
     
     <nav class="nav-menu">
-      <div class="nav-item active">
+      <div class="nav-item active" style="cursor: pointer;" onclick="navigateToFolder(null, 'Drive Saya')">
         <span>📂</span> Drive Saya
       </div>
     </nav>
@@ -50,6 +53,9 @@
       <div style="margin-bottom: 16px; display: flex; gap: 12px;">
         <input type="text" id="searchInput" class="form-control" placeholder="🔍 Cari file..." style="max-width: 300px; padding: 8px 16px; border-radius: 20px; border: 1px solid var(--border-light); font-size: 0.9rem;">
       </div>
+
+      <!-- Breadcrumbs Nav -->
+      <div id="breadcrumb" class="breadcrumb"></div>
 
       <div id="fileContainer" style="height: 100%;">
         <div id="noFilesMsg" class="empty-state" style="display: none;">
@@ -96,6 +102,63 @@
   </div>
 </div>
 
+<!-- Create Folder Modal -->
+<div id="createFolderModal" class="view-modal-overlay" onclick="if(event.target===this) closeCreateFolderModal()">
+  <div class="view-modal" style="width: 400px; height: auto;">
+    <div class="view-modal-header">
+      <div class="view-modal-title">Buat Folder Baru</div>
+      <button class="view-modal-close" onclick="closeCreateFolderModal()">×</button>
+    </div>
+    <div class="view-modal-form-body">
+      <input type="text" id="folderNameInput" class="form-control" placeholder="Nama folder..." style="padding: 10px; border: 1px solid var(--border-light); border-radius: 4px; width: 100%; box-sizing: border-box;">
+      <div style="display: flex; gap: 8px; justify-content: flex-end;">
+        <button class="btn btn-secondary" onclick="closeCreateFolderModal()" style="padding: 8px 16px;">Batal</button>
+        <button class="btn btn-primary" onclick="submitCreateFolder()" style="padding: 8px 16px;">Buat</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Rename Modal -->
+<div id="renameModal" class="view-modal-overlay" onclick="if(event.target===this) closeRenameModal()">
+  <div class="view-modal" style="width: 400px; height: auto;">
+    <div class="view-modal-header">
+      <div class="view-modal-title">Ubah Nama</div>
+      <button class="view-modal-close" onclick="closeRenameModal()">×</button>
+    </div>
+    <div class="view-modal-form-body">
+      <input type="text" id="renameInput" class="form-control" placeholder="Nama baru..." style="padding: 10px; border: 1px solid var(--border-light); border-radius: 4px; width: 100%; box-sizing: border-box;">
+      <div style="display: flex; gap: 8px; justify-content: flex-end;">
+        <button class="btn btn-secondary" onclick="closeRenameModal()" style="padding: 8px 16px;">Batal</button>
+        <button class="btn btn-primary" onclick="submitRename()" style="padding: 8px 16px;">Ubah</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Custom Confirm Delete Modal -->
+<div id="confirmDeleteModal" class="view-modal-overlay" onclick="if(event.target===this) closeConfirmDeleteModal()">
+  <div class="view-modal" style="width: 450px; height: auto;">
+    <div class="view-modal-header" style="background: var(--danger-bg); border-bottom: 1px solid #f2b8b5; padding: 16px 24px;">
+      <div class="view-modal-title" style="color: var(--danger); font-weight: 700; display: flex; align-items: center; gap: 8px;">
+        ⚠️ Konfirmasi Hapus
+      </div>
+      <button class="view-modal-close" onclick="closeConfirmDeleteModal()" style="color: var(--danger); font-size: 1.5rem; background: transparent; border: none; cursor: pointer;">×</button>
+    </div>
+    <div class="view-modal-form-body" style="text-align: left;">
+      <p id="confirmDeleteMsg" style="font-size: 1rem; color: var(--text); margin-bottom: 0px; line-height: 1.5; font-weight: 500;"></p>
+      <p id="confirmDeleteSubmsg" style="font-size: 0.875rem; color: var(--danger); font-weight: 500; margin-bottom: 0px; background: var(--danger-bg); padding: 12px; border-radius: var(--radius-sm); border-left: 4px solid var(--danger); line-height: 1.4;"></p>
+      <div style="display: flex; gap: 12px; justify-content: flex-end; width: 100%;">
+        <button class="btn btn-secondary" onclick="closeConfirmDeleteModal()" style="padding: 10px 20px;">Batal</button>
+        <button id="btnConfirmDelete" class="btn btn-danger" style="padding: 10px 20px; background: var(--danger);">Hapus Permanen</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Container -->
+<div id="toastContainer" class="toast-container"></div>
+
 <script>
 const token = localStorage.getItem('token');
 const role  = localStorage.getItem('role');
@@ -106,11 +169,43 @@ if (!token) {
 
 document.getElementById('welcomeMsg').textContent = `${localStorage.getItem('username')}`;
 
-const alertBox = document.getElementById('alert');
+// State Management Folder
+let currentFolderId = null;
+let folderPath = [{ id: null, name: 'Drive Saya' }];
+
+// Toast Notification System
+function showToast(message, type = 'success') {
+  const toastContainer = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+  
+  const icon = type === 'success' ? '✅' : '❌';
+  toast.innerHTML = `
+    <div class="toast-icon">${icon}</div>
+    <div class="toast-content">${message}</div>
+    <button class="toast-close">&times;</button>
+  `;
+  
+  toastContainer.appendChild(toast);
+  
+  // Trigger transition
+  setTimeout(() => toast.classList.add('show'), 50);
+  
+  const closeBtn = toast.querySelector('.toast-close');
+  const dismissToast = () => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 300);
+  };
+  
+  closeBtn.addEventListener('click', dismissToast);
+  
+  // Auto dismiss
+  setTimeout(dismissToast, 4000);
+}
+
+// Redirect alert bawaan ke toast yang lebih indah
 function showAlert(msg, type = 'error') {
-  alertBox.textContent = msg;
-  alertBox.className   = `alert alert-${type} show`;
-  setTimeout(() => { alertBox.className = 'alert'; }, 4000);
+  showToast(msg, type === 'error' ? 'error' : 'success');
 }
 
 function authHeader() {
@@ -145,21 +240,71 @@ function getFileIcon(mimeType) {
   return '📎';
 }
 
+function navigateToFolder(folderId, folderName) {
+  const idx = folderPath.findIndex(item => item.id === folderId);
+  if (idx !== -1) {
+    folderPath = folderPath.slice(0, idx + 1);
+  } else {
+    folderPath.push({ id: folderId, name: folderName });
+  }
+  loadFiles(folderId);
+}
+
+function renderBreadcrumbs() {
+  const breadcrumbEl = document.getElementById('breadcrumb');
+  if (!breadcrumbEl) return;
+  
+  breadcrumbEl.innerHTML = '';
+  
+  folderPath.forEach((item, index) => {
+    const isLast = index === folderPath.length - 1;
+    
+    const breadcrumbItem = document.createElement('span');
+    breadcrumbItem.className = `breadcrumb-item ${isLast ? 'active' : ''}`;
+    breadcrumbItem.textContent = item.name;
+    
+    if (!isLast) {
+      breadcrumbItem.onclick = () => {
+        navigateToFolder(item.id, item.name);
+      };
+      
+      breadcrumbEl.appendChild(breadcrumbItem);
+      
+      const separator = document.createElement('span');
+      separator.className = 'breadcrumb-separator';
+      separator.textContent = '>';
+      breadcrumbEl.appendChild(separator);
+    } else {
+      breadcrumbEl.appendChild(breadcrumbItem);
+    }
+  });
+}
+
 /**
- * Memuat semua file pengguna dan menampilkannya di Grid.
+ * Memuat semua file dan folder pengguna dan menampilkannya di Grid.
  * Juga menangani pengambilan thumbnail otomatis untuk gambar.
  */
-async function loadFiles() {
+async function loadFiles(parentFolderId = null) {
+  currentFolderId = parentFolderId;
+  renderBreadcrumbs();
+
   const fileGrid = document.getElementById('fileGrid');
   const noFilesMsg = document.getElementById('noFilesMsg');
 
   try {
-    const resp  = await fetch('/api/files', { headers: authHeader() });
+    let url = '/api/files';
+    if (parentFolderId) {
+      url += `?parent_id=${parentFolderId}`;
+    }
+    
+    const resp  = await fetch(url, { headers: authHeader() });
     const data  = await resp.json();
 
     if (!data.success || data.files.length === 0) {
       fileGrid.style.display = 'none';
       noFilesMsg.style.display = 'flex';
+      noFilesMsg.querySelector('h3').textContent = 'Tempat untuk semua file Anda';
+      noFilesMsg.querySelector('p').textContent = 'Gunakan tombol di sidebar untuk mengunggah file atau membuat folder.';
       return;
     }
 
@@ -172,27 +317,47 @@ async function loadFiles() {
         day: 'numeric', month: 'short', year: 'numeric'
       });
 
-      const isImage = file.mime_type.startsWith('image/');
-      const iconHTML = isImage 
-        ? `<div class="file-thumb" id="thumb-${file.id}" style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:var(--text-muted); font-size:0.8rem;">Memuat...</div>`
-        : `<span class="file-icon">${getFileIcon(file.mime_type)}</span>`;
+      let iconHTML, actionButtons;
+      if (file.is_folder) {
+        iconHTML = `<span class="file-icon" style="font-size: 2.5rem;">📁</span>`;
+        actionButtons = `
+          <button class="btn btn-primary btn-block" onclick="navigateToFolder(${file.id}, '${file.original_name.replace(/'/g, "\\'")}')" style="font-size: 0.75rem; padding: 6px;">📂 Buka</button>
+          <div style="display: flex; gap: 4px;">
+            <button class="btn btn-secondary btn-block" onclick="openRenameModal(${file.id}, '${file.original_name.replace(/'/g, "\\'")}')" style="font-size: 0.75rem; padding: 6px; flex: 1;">✏️ Ubah Nama</button>
+            <button class="btn btn-danger btn-block" onclick="openConfirmDeleteModal(${file.id}, '${file.original_name.replace(/'/g, "\\'")}', true)" style="font-size: 0.75rem; padding: 6px; flex: 1;">🗑️ Hapus</button>
+          </div>
+        `;
+      } else {
+        const isImage = file.mime_type.startsWith('image/');
+        iconHTML = isImage 
+          ? `<div class="file-thumb" id="thumb-${file.id}" style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:var(--text-muted); font-size:0.8rem;">Memuat...</div>`
+          : `<span class="file-icon">${getFileIcon(file.mime_type)}</span>`;
+
+        actionButtons = `
+          <button class="btn btn-primary btn-block" onclick="viewFile(${file.id}, '${file.mime_type}', '${file.original_name.replace(/'/g, "\\'")}')" style="font-size: 0.75rem; padding: 6px;">👁 Lihat</button>
+          <div style="display: flex; gap: 4px;">
+            <button class="btn btn-secondary btn-block" onclick="downloadFile(${file.id}, '${file.original_name.replace(/'/g, "\\'")}')" style="font-size: 0.75rem; padding: 6px; flex: 1;">⬇ Unduh</button>
+            <button class="btn btn-secondary btn-block" onclick="openRenameModal(${file.id}, '${file.original_name.replace(/'/g, "\\'")}')" style="font-size: 0.75rem; padding: 6px; flex: 1;">✏️</button>
+            <button class="btn btn-danger btn-block" onclick="openConfirmDeleteModal(${file.id}, '${file.original_name.replace(/'/g, "\\'")}', false)" style="font-size: 0.75rem; padding: 6px;">🗑️</button>
+          </div>
+        `;
+      }
 
       const fileCard = document.createElement('div');
       fileCard.className = 'file-card';
-      fileCard.dataset.name = file.original_name.toLowerCase(); // Untuk search filter
+      fileCard.dataset.name = file.original_name.toLowerCase();
       fileCard.innerHTML = `
         <div class="file-card-top" style="overflow:hidden;">${iconHTML}</div>
         <div class="file-name" title="${file.original_name}">${file.original_name}</div>
-        <div class="file-meta">${formatSize(file.file_size)} • ${date}</div>
+        <div class="file-meta">${file.is_folder ? 'Folder' : formatSize(file.file_size)} • ${date}</div>
         <div class="file-card-actions">
-          <button class="btn btn-primary btn-block" onclick="viewFile(${file.id}, '${file.mime_type}', '${file.original_name.replace(/'/g, "\\'")}')" style="font-size: 0.75rem; padding: 6px;">👁 Lihat</button>
-          <button class="btn btn-secondary btn-block" onclick="downloadFile(${file.id}, '${file.original_name.replace(/'/g, "\\'")}')" style="font-size: 0.75rem; padding: 6px;">⬇ Unduh</button>
+          ${actionButtons}
         </div>
       `;
       fileGrid.appendChild(fileCard);
 
       // Async fetch untuk thumbnail gambar agar preview langsung terlihat
-      if (isImage) {
+      if (!file.is_folder && file.mime_type.startsWith('image/')) {
         fetch(`/api/files/download?id=${file.id}`, { headers: authHeader() })
           .then(r => r.blob())
           .then(blob => {
@@ -341,12 +506,14 @@ function closeViewModal() {
 // ── UPLOAD FILE ──
 const fileInput   = document.getElementById('fileInput');
 const btnUploadTrigger = document.getElementById('btnUploadTrigger');
+const btnCreateFolder = document.getElementById('btnCreateFolder');
 const uploadOverlay = document.getElementById('uploadOverlay');
 const uploadFileName = document.getElementById('uploadFileName');
 const progressBar = document.getElementById('progressBar');
 const progressText = document.getElementById('progressText');
 
 btnUploadTrigger.addEventListener('click', () => fileInput.click());
+btnCreateFolder.addEventListener('click', () => openCreateFolderModal());
 
 fileInput.addEventListener('change', () => {
   if (fileInput.files.length > 0) {
@@ -387,7 +554,8 @@ function uploadFile(file) {
       progressText.textContent = 'Berhasil diunggah!';
       progressBar.style.background = 'var(--success)';
       fileInput.value = '';
-      loadFiles(); 
+      showToast('File berhasil diunggah.', 'success');
+      loadFiles(currentFolderId); 
     } else {
       progressText.textContent = 'Upload gagal.';
       progressBar.style.background = 'var(--danger)';
@@ -402,7 +570,12 @@ function uploadFile(file) {
     showAlert('Koneksi terputus saat mengunggah.');
   });
 
-  xhr.open('POST', '/api/files/upload');
+  let uploadUrl = '/api/files/upload';
+  if (currentFolderId !== null) {
+    uploadUrl += `?parent_id=${currentFolderId}`;
+  }
+
+  xhr.open('POST', uploadUrl);
   xhr.setRequestHeader('Authorization', `Bearer ${token}`);
   xhr.send(formData);
 }
@@ -442,6 +615,197 @@ document.getElementById('btnLogout').addEventListener('click', async () => {
   localStorage.clear();
   window.location.href = '/views/login.html';
 });
+
+// ── CREATE FOLDER ──
+function openCreateFolderModal() {
+  document.getElementById('createFolderModal').classList.add('show');
+  document.getElementById('folderNameInput').focus();
+}
+
+function closeCreateFolderModal() {
+  document.getElementById('createFolderModal').classList.remove('show');
+  document.getElementById('folderNameInput').value = '';
+}
+
+async function submitCreateFolder() {
+  const folderName = document.getElementById('folderNameInput').value.trim();
+  if (!folderName) {
+    showAlert('Nama folder tidak boleh kosong.');
+    return;
+  }
+
+  try {
+    const resp = await fetch('/api/files/folder', {
+      method: 'POST',
+      headers: {
+        ...authHeader(),
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        folderName: folderName,
+        parentFolderId: currentFolderId
+      })
+    });
+
+    const data = await resp.json();
+    if (data.success) {
+      showToast('Folder berhasil dibuat.', 'success');
+      closeCreateFolderModal();
+      loadFiles(currentFolderId);
+    } else {
+      showAlert(data.message || 'Gagal membuat folder.');
+    }
+  } catch (e) {
+    console.error('Error:', e);
+    showAlert('Terjadi kesalahan saat membuat folder.');
+  }
+}
+
+// ── RENAME ITEM ──
+let renameItemId = null;
+
+function openRenameModal(itemId, currentName) {
+  renameItemId = itemId;
+  document.getElementById('renameInput').value = currentName;
+  document.getElementById('renameModal').classList.add('show');
+  document.getElementById('renameInput').focus();
+  document.getElementById('renameInput').select();
+}
+
+function closeRenameModal() {
+  document.getElementById('renameModal').classList.remove('show');
+  document.getElementById('renameInput').value = '';
+  renameItemId = null;
+}
+
+async function submitRename() {
+  const newName = document.getElementById('renameInput').value.trim();
+  if (!newName) {
+    showAlert('Nama tidak boleh kosong.');
+    return;
+  }
+
+  if (!renameItemId) {
+    showAlert('Item tidak valid.');
+    return;
+  }
+
+  try {
+    const resp = await fetch('/api/files/rename', {
+      method: 'PUT',
+      headers: {
+        ...authHeader(),
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        id: renameItemId,
+        newName: newName
+      })
+    });
+
+    const data = await resp.json();
+    if (data.success) {
+      showToast('Nama berhasil diubah.', 'success');
+      closeRenameModal();
+      loadFiles(currentFolderId);
+    } else {
+      showAlert(data.message || 'Gagal mengubah nama.');
+    }
+  } catch (e) {
+    console.error('Error:', e);
+    showAlert('Terjadi kesalahan saat mengubah nama.');
+  }
+}
+
+// ── CUSTOM CONFIRM DELETE MODAL & ACTIONS ──
+let deleteItemId = null;
+
+function openConfirmDeleteModal(itemId, itemName, isFolder = false) {
+  deleteItemId = itemId;
+  
+  const msgEl = document.getElementById('confirmDeleteMsg');
+  const submsgEl = document.getElementById('confirmDeleteSubmsg');
+  
+  if (isFolder) {
+    msgEl.innerHTML = `Apakah Anda yakin ingin menghapus folder <strong>"${itemName}"</strong>?`;
+    submsgEl.style.display = 'block';
+    submsgEl.textContent = '⚠️ Peringatan: Menghapus folder ini akan menghapus semua file dan subfolder di dalamnya secara permanen.';
+  } else {
+    msgEl.innerHTML = `Apakah Anda yakin ingin menghapus file <strong>"${itemName}"</strong>?`;
+    submsgEl.style.display = 'none';
+  }
+  
+  const modal = document.getElementById('confirmDeleteModal');
+  modal.classList.add('show');
+}
+
+function closeConfirmDeleteModal() {
+  document.getElementById('confirmDeleteModal').classList.remove('show');
+  deleteItemId = null;
+}
+
+document.getElementById('btnConfirmDelete').onclick = async function() {
+  if (!deleteItemId) return;
+  
+  try {
+    const resp = await fetch(`/api/files?id=${deleteItemId}`, {
+      method: 'DELETE',
+      headers: authHeader()
+    });
+
+    const data = await resp.json();
+    if (data.success) {
+      showToast('Item berhasil dihapus.', 'success');
+      closeConfirmDeleteModal();
+      loadFiles(currentFolderId);
+    } else {
+      showToast(data.message || 'Gagal menghapus item.', 'error');
+    }
+  } catch (e) {
+    console.error('Error:', e);
+    showToast('Terjadi kesalahan saat menghapus item.', 'error');
+  }
+};
+
+// Pengecekan Status Akun Berkala
+async function checkAccountStatus() {
+  if (!token) return;
+  try {
+    const resp = await fetch('/api/auth/status', { headers: authHeader() });
+    if (resp.status === 401 || resp.status === 403) {
+      const data = await resp.json();
+      if (data.status === 'disabled' || (data.message && data.message.includes('nonaktif'))) {
+        handleAccountDeactivated();
+      }
+    }
+  } catch (e) {
+    console.error('Error checking status:', e);
+  }
+}
+
+function handleAccountDeactivated() {
+  document.body.innerHTML = `
+    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: var(--background); color: var(--text); font-family: 'Outfit', sans-serif; padding: 24px; text-align: center;">
+      <div style="font-size: 5rem; margin-bottom: 24px; animation: bounce 2s infinite;">🔒</div>
+      <h1 style="color: var(--danger); font-size: 2rem; font-weight: 700; margin-bottom: 12px;">Akun Dinonaktifkan</h1>
+      <p style="font-size: 1.1rem; color: var(--text-muted); max-width: 500px; line-height: 1.6; margin-bottom: 32px;">
+        Maaf, akun Anda telah dinonaktifkan oleh administrator. Anda tidak lagi memiliki akses ke berkas di Nitip Data Drive.
+      </p>
+      <div style="font-size: 0.875rem; color: var(--text-muted); background: var(--surface-variant); padding: 8px 16px; border-radius: var(--radius-sm);">
+        Mengarahkan kembali ke halaman login dalam beberapa detik...
+      </div>
+    </div>
+  `;
+  
+  localStorage.clear();
+  setTimeout(() => {
+    window.location.href = '/views/login.html';
+  }, 5000);
+}
+
+// Jalankan pengecekan setiap 10 detik dan jalankan langsung di awal
+setInterval(checkAccountStatus, 10000);
+checkAccountStatus();
 
 loadFiles();
 </script>

@@ -233,3 +233,108 @@
 .file-input-hidden {
   display: none;
 }
+
+/* Breadcrumb Nav */
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin-bottom: 24px;
+  background: var(--surface-variant);
+  padding: 10px 16px;
+  border-radius: var(--radius-md);
+  flex-wrap: wrap;
+}
+.breadcrumb-item {
+  color: var(--primary);
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.2s;
+  font-weight: 500;
+}
+.breadcrumb-item:hover {
+  color: var(--primary-hover);
+  text-decoration: underline;
+}
+.breadcrumb-item.active {
+  color: var(--text-muted);
+  cursor: default;
+  font-weight: 600;
+}
+.breadcrumb-item.active:hover {
+  text-decoration: none;
+}
+.breadcrumb-separator {
+  color: var(--secondary);
+  user-select: none;
+  font-size: 0.8rem;
+  opacity: 0.6;
+}
+
+/* Toast Notifications */
+.toast-container {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 9999;
+  pointer-events: none;
+}
+.toast {
+  background: var(--surface);
+  color: var(--text);
+  border-radius: var(--radius-md);
+  padding: 16px 20px;
+  min-width: 320px;
+  max-width: 420px;
+  box-shadow: var(--shadow-lg);
+  border-left: 6px solid var(--primary);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transform: translateX(120%);
+  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease;
+  opacity: 0;
+  pointer-events: auto;
+}
+.toast.show {
+  transform: translateX(0);
+  opacity: 1;
+}
+.toast-success {
+  border-left-color: #146c2e;
+}
+.toast-success .toast-icon {
+  color: #146c2e;
+}
+.toast-error {
+  border-left-color: #b3261e;
+}
+.toast-error .toast-icon {
+  color: #b3261e;
+}
+.toast-icon {
+  font-size: 1.25rem;
+  display: flex;
+  align-items: center;
+}
+.toast-content {
+  flex: 1;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+.toast-close {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  padding: 0 4px;
+}
+.toast-close:hover {
+  color: var(--text);
+}

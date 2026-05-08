@@ -5,7 +5,7 @@
 
 const crypto = require('crypto');
 const db = require('../config/database');
-const { createSession, destroySession, validateSession } = require('../middleware/auth');
+const { createSession, destroySession, validateSession, destroySessionsByUserId } = require('../middleware/auth');
 const fs = require('fs');
 
 /**
@@ -176,4 +176,33 @@ function logout(req, res, sendJSON) {
   return sendJSON(res, 200, { success: true, message: 'Logout berhasil.' });
 }
 
-module.exports = { login, register, logout };
+/**
+ * @function checkStatus
+ * @description Memeriksa apakah sesi pengguna masih aktif dan status akun di database tidak dinonaktifkan.
+ */
+async function checkStatus(req, res, sendJSON) {
+  const session = validateSession(req);
+  if (!session) {
+    return sendJSON(res, 401, { success: false, message: 'Sesi tidak valid.' });
+  }
+
+  try {
+    const results = await db.query('SELECT status FROM users WHERE id = ? LIMIT 1', [session.userId]);
+    if (results.length === 0) {
+      return sendJSON(res, 404, { success: false, message: 'Pengguna tidak ditemukan.' });
+    }
+
+    const userStatus = results[0].status;
+    if (userStatus !== 'active') {
+      destroySessionsByUserId(session.userId);
+      return sendJSON(res, 403, { success: false, status: userStatus, message: 'Akun Anda telah dinonaktifkan oleh admin.' });
+    }
+
+    return sendJSON(res, 200, { success: true, status: 'active' });
+  } catch (err) {
+    console.error('[AUTH] Check status error:', err.message);
+    return sendJSON(res, 500, { success: false, message: 'Terjadi kesalahan server.' });
+  }
+}
+
+module.exports = { login, register, logout, checkStatus };

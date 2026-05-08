@@ -15,6 +15,9 @@ function sendJSON(res, statusCode, data) {
     'Content-Type': 'application/json',
     'Access-Control-Allow-Origin': '*',
     'X-Content-Type-Options': 'nosniff',
+    'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0',
   });
   res.end(JSON.stringify(data));
 }

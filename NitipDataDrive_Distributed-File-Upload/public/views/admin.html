@@ -27,10 +27,7 @@
       </div>
     </div>
 
-    <!-- Alert Container -->
-    <div style="padding: 16px 16px 0 16px;">
-       <div id="alert" class="alert" style="margin: 0;"></div>
-    </div>
+
 
     <!-- Grid Layout 100vh -->
     <div class="admin-grid">
@@ -139,9 +136,9 @@
 
 <!-- Edit User Modal -->
 <div id="editUserModal" class="view-modal-overlay" onclick="if(event.target===this) closeEditUserModal()">
-  <div class="view-modal" style="max-width: 400px; padding: 24px;">
-    <div class="view-modal-header" style="border:none; padding:0 0 16px 0;">
-      <h3 style="margin:0;">Edit Pengguna</h3>
+  <div class="view-modal" style="max-width: 400px; padding: 24px; height: auto; border-radius: 20px;">
+    <div class="view-modal-header" style="border:none; padding:0 0 16px 0; background:transparent;">
+      <h3 style="margin:0; font-size: 1.25rem; font-weight: 700;">Edit Pengguna</h3>
       <button class="view-modal-close" onclick="closeEditUserModal()">×</button>
     </div>
     <div class="form-group">
@@ -153,9 +150,27 @@
       <input type="email" id="editEmail" class="form-control">
     </div>
     <input type="hidden" id="editUserId">
-    <button class="btn btn-primary btn-block" onclick="saveUserEdit()">Simpan Perubahan</button>
+    <button class="btn btn-primary btn-block" style="border-radius: 12px; padding: 12px;" onclick="saveUserEdit()">Simpan Perubahan</button>
   </div>
 </div>
+
+<!-- Custom Confirmation Modal for Admin -->
+<div id="confirmAdminModal" class="view-modal-overlay" style="z-index: 3000;">
+  <div class="view-modal" style="max-width: 440px; height: auto; padding: 32px; border-radius: 20px; border: none; background: #ffffff;">
+    <div style="text-align: center; margin-bottom: 24px;">
+      <div id="confirmAdminIcon" style="font-size: 3.5rem; margin-bottom: 16px;">⚠️</div>
+      <h3 id="confirmAdminTitle" style="font-size: 1.35rem; font-weight: 700; color: #0f172a; margin-bottom: 8px;">Konfirmasi</h3>
+      <p id="confirmAdminMessage" style="font-size: 0.95rem; color: #64748b; line-height: 1.5; margin: 0;"></p>
+    </div>
+    <div style="display: flex; gap: 12px; margin-top: 12px; width: 100%;">
+      <button class="btn btn-secondary" style="flex: 1; border-radius: 12px; padding: 12px; font-weight: 600;" onclick="closeConfirmAdminModal()">Batal</button>
+      <button id="btnConfirmAdminAction" class="btn btn-primary" style="flex: 1; border-radius: 12px; padding: 12px; font-weight: 600;">Ya, Lanjutkan</button>
+    </div>
+  </div>
+</div>
+
+<!-- Floating Toast Container -->
+<div id="toastContainer" class="toast-container"></div>
 
 <script>
 const token    = localStorage.getItem('token');
@@ -169,12 +184,63 @@ if (!token || role !== 'admin') {
 
 document.getElementById('welcomeMsg').textContent = `Admin: ${username}`;
 
-const alertBox = document.getElementById('alert');
-function showAlert(msg, type = 'error') {
-  alertBox.textContent = msg;
-  alertBox.className   = `alert alert-${type} show`;
-  setTimeout(() => { alertBox.className = 'alert'; }, 4000);
+// Toast Notification System
+function showToast(message, type = 'success') {
+  const toastContainer = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+  
+  const icon = type === 'success' 
+    ? `<svg style="width:20px;height:20px;fill:currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>`
+    : `<svg style="width:20px;height:20px;fill:currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>`;
+
+  toast.innerHTML = `
+    <div class="toast-icon">${icon}</div>
+    <div class="toast-content">${message}</div>
+    <button class="toast-close">&times;</button>
+  `;
+
+  toastContainer.appendChild(toast);
+  
+  // Slide in
+  setTimeout(() => toast.classList.add('show'), 50);
+
+  const closeBtn = toast.querySelector('.toast-close');
+  const dismissToast = () => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 300);
+  };
+
+  closeBtn.addEventListener('click', dismissToast);
+
+  // Auto dismiss
+  setTimeout(dismissToast, 4000);
 }
+
+function showAlert(msg, type = 'error') {
+  showToast(msg, type);
+}
+
+// Custom Modal Confirmation System
+let confirmAction = null;
+
+function showConfirmModal(message, icon, title, onConfirm) {
+  document.getElementById('confirmAdminMessage').innerHTML = message;
+  document.getElementById('confirmAdminIcon').textContent = icon;
+  document.getElementById('confirmAdminTitle').textContent = title;
+  confirmAction = onConfirm;
+  document.getElementById('confirmAdminModal').classList.add('show');
+}
+
+function closeConfirmAdminModal() {
+  document.getElementById('confirmAdminModal').classList.remove('show');
+  confirmAction = null;
+}
+
+document.getElementById('btnConfirmAdminAction').onclick = function() {
+  if (confirmAction) confirmAction();
+  closeConfirmAdminModal();
+};
 
 // ── Fungsi Utilitas ──
 
@@ -237,23 +303,35 @@ async function createUser() {
 }
 
 async function approveUser(userId, username) {
-  if (!confirm(`Setujui akun "${username}"?`)) return;
-  try {
-    const resp = await fetch(`/api/users/approve?id=${userId}`, { method: 'POST', headers: authHeader() });
-    const data = await resp.json();
-    if (data.success) { showAlert(`Akun "${username}" berhasil disetujui.`, 'success'); loadUsers(); }
-    else showAlert(data.message || 'Gagal menyetujui akun.');
-  } catch (e) { showAlert('Terjadi kesalahan jaringan.'); }
+  showConfirmModal(
+    `Apakah Anda yakin ingin menyetujui akun <strong>"${username}"</strong>? Akun ini akan langsung aktif.`,
+    '✔️',
+    'Setujui Akun',
+    async () => {
+      try {
+        const resp = await fetch(`/api/users/approve?id=${userId}`, { method: 'POST', headers: authHeader() });
+        const data = await resp.json();
+        if (data.success) { showToast(`Akun "${username}" berhasil disetujui.`, 'success'); loadUsers(); }
+        else showToast(data.message || 'Gagal menyetujui akun.', 'error');
+      } catch (e) { showToast('Terjadi kesalahan jaringan.', 'error'); }
+    }
+  );
 }
 
 async function rejectUser(userId, username) {
-  if (!confirm(`Tolak akun "${username}"?`)) return;
-  try {
-    const resp = await fetch(`/api/users/reject?id=${userId}`, { method: 'POST', headers: authHeader() });
-    const data = await resp.json();
-    if (data.success) { showAlert(`Permintaan akun "${username}" ditolak.`, 'success'); loadUsers(); }
-    else showAlert(data.message || 'Gagal menolak akun.');
-  } catch (e) { showAlert('Terjadi kesalahan jaringan.'); }
+  showConfirmModal(
+    `Apakah Anda yakin ingin menolak akun <strong>"${username}"</strong>?`,
+    '❌',
+    'Tolak Akun',
+    async () => {
+      try {
+        const resp = await fetch(`/api/users/reject?id=${userId}`, { method: 'POST', headers: authHeader() });
+        const data = await resp.json();
+        if (data.success) { showToast(`Permintaan akun "${username}" ditolak.`, 'success'); loadUsers(); }
+        else showToast(data.message || 'Gagal menolak akun.', 'error');
+      } catch (e) { showToast('Terjadi kesalahan jaringan.', 'error'); }
+    }
+  );
 }
 
 function formatSize(bytes) {
@@ -383,13 +461,19 @@ async function saveUserEdit() {
  * Menghapus pengguna secara permanen.
  */
 async function deleteUser(userId, uname) {
-  if (!confirm(`Hapus pengguna "${uname}"?\n\nSemua file milik pengguna ini juga akan terhapus.`)) return;
-  try {
-    const resp = await fetch(`/api/users?id=${userId}`, { method: 'DELETE', headers: authHeader() });
-    const data = await resp.json();
-    if (data.success) { showAlert(`Pengguna "${uname}" berhasil dihapus.`, 'success'); loadUsers(); loadFiles(); }
-    else showAlert(data.message || 'Gagal menghapus pengguna.');
-  } catch (e) { showAlert('Terjadi kesalahan jaringan.'); }
+  showConfirmModal(
+    `Apakah Anda yakin ingin menghapus pengguna <strong>"${uname}"</strong>?<br><br><span style="color:var(--danger); font-weight:600;">⚠️ Perhatian: Semua file milik pengguna ini juga akan terhapus secara permanen dari server!</span>`,
+    '🗑️',
+    'Hapus Pengguna',
+    async () => {
+      try {
+        const resp = await fetch(`/api/users?id=${userId}`, { method: 'DELETE', headers: authHeader() });
+        const data = await resp.json();
+        if (data.success) { showToast(`Pengguna "${uname}" berhasil dihapus.`, 'success'); loadUsers(); loadFiles(); }
+        else showToast(data.message || 'Gagal menghapus pengguna.', 'error');
+      } catch (e) { showToast('Terjadi kesalahan jaringan.', 'error'); }
+    }
+  );
 }
 
 // ── Muat Daftar File ──
@@ -499,13 +583,19 @@ function closeViewModal() {
 }
 
 async function deleteFile(fileId, fileName) {
-  if (!confirm(`Hapus file "${fileName}"?`)) return;
-  try {
-    const resp = await fetch(`/api/files?id=${fileId}`, { method: 'DELETE', headers: authHeader() });
-    const data = await resp.json();
-    if (data.success) { showAlert('File berhasil dihapus.', 'success'); loadFiles(); }
-    else showAlert(data.message || 'Gagal menghapus file.');
-  } catch (e) { showAlert('Terjadi kesalahan.'); }
+  showConfirmModal(
+    `Apakah Anda yakin ingin menghapus berkas <strong>"${fileName}"</strong> secara permanen?`,
+    '🗑️',
+    'Hapus Berkas',
+    async () => {
+      try {
+        const resp = await fetch(`/api/files?id=${fileId}`, { method: 'DELETE', headers: authHeader() });
+        const data = await resp.json();
+        if (data.success) { showToast('File berhasil dihapus.', 'success'); loadFiles(); }
+        else showToast(data.message || 'Gagal menghapus file.', 'error');
+      } catch (e) { showToast('Terjadi kesalahan.', 'error'); }
+    }
+  );
 }
 
 // ── Logout ──

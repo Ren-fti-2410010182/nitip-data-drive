@@ -44,7 +44,7 @@ const ALLOWED_MIME_TYPES = new Set([
  * @param {Function} readBody - Utilitas pembaca body stream request.
  * @returns {Promise<void>}
  */
-async function uploadFile(req, res, sendJSON, readBody) {
+async function uploadFile(req, res, sendJSON, readBody, parsedUrl) {
   const session = validateSession(req);
   if (!session) {
     return sendJSON(res, 401, { success: false, message: 'Sesi tidak valid. Silakan login kembali.' });
@@ -92,10 +92,13 @@ async function uploadFile(req, res, sendJSON, readBody) {
     return sendJSON(res, 500, { success: false, message: 'Gagal menyimpan file ke server.' });
   }
 
+  const parentId = parsedUrl ? parsedUrl.searchParams.get('parent_id') : null;
+  const parentFolderId = parentId && !isNaN(Number(parentId)) ? Number(parentId) : null;
+
   try {
     await db.query(
-      'INSERT INTO files (original_name, stored_name, file_size, mime_type, user_id) VALUES (?, ?, ?, ?, ?)',
-      [fileName, storedName, fileData.length, mimeType, session.userId]
+      'INSERT INTO files (original_name, stored_name, file_size, mime_type, user_id, parent_folder_id) VALUES (?, ?, ?, ?, ?, ?)',
+      [fileName, storedName, fileData.length, mimeType, session.userId, parentFolderId]
     );
   } catch (dbErr) {
     fs.unlinkSync(storagePath);
@@ -114,21 +117,24 @@ async function uploadFile(req, res, sendJSON, readBody) {
 
 /**
  * @function listFiles
- * @description Mengambil daftar file dari database. Admin melihat semua file, user biasa hanya melihat file miliknya.
+ * @description Mengambil daftar file dan folder dari database. Admin melihat semua file, user biasa hanya melihat file miliknya.
  * @param {Object} req - Objek request Node.js native.
  * @param {Object} res - Objek response Node.js native.
  * @param {Function} sendJSON - Utilitas untuk mengirim respon JSON.
+ * @param {URL} parsedUrl - Objek URL yang sudah diparse.
  * @returns {Promise<void>}
  */
-async function listFiles(req, res, sendJSON) {
+async function listFiles(req, res, sendJSON, parsedUrl) {
   const session = validateSession(req);
   if (!session) {
     return sendJSON(res, 401, { success: false, message: 'Autentikasi diperlukan.' });
   }
 
   try {
+    const parentId = parsedUrl.searchParams.get('parent_id') || null;
+    
     let query = `SELECT f.id, f.original_name, f.file_size, f.mime_type, f.uploaded_at,
-                        u.username AS uploader
+                        f.is_folder, f.parent_folder_id, u.username AS uploader
                  FROM files f
                  INNER JOIN users u ON f.user_id = u.id`;
     let params = [];
@@ -136,9 +142,18 @@ async function listFiles(req, res, sendJSON) {
     if (session.role !== 'admin') {
       query += ' WHERE f.user_id = ?';
       params.push(session.userId);
+    } else {
+      query += ' WHERE 1=1';
     }
 
-    query += ' ORDER BY f.uploaded_at DESC';
+    if (parentId !== null) {
+      query += ' AND f.parent_folder_id = ?';
+      params.push(Number(parentId));
+    } else {
+      query += ' AND f.parent_folder_id IS NULL';
+    }
+
+    query += ' ORDER BY f.is_folder DESC, f.uploaded_at DESC';
 
     const files = await db.query(query, params);
     return sendJSON(res, 200, { success: true, files });
@@ -203,7 +218,7 @@ async function downloadFile(req, res, sendJSON, parsedUrl) {
 
 /**
  * @function deleteFile
- * @description Menghapus file secara fisik dari server dan metadatanya dari database. Hanya role admin yang diperbolehkan.
+ * @description Menghapus file atau folder. User bisa menghapus file/folder mereka sendiri, admin bisa menghapus siapa saja.
  * @param {Object} req - Objek request Node.js native.
  * @param {Object} res - Objek response Node.js native.
  * @param {Function} sendJSON - Utilitas untuk mengirim respon JSON.
@@ -216,33 +231,229 @@ async function deleteFile(req, res, sendJSON, parsedUrl) {
     return sendJSON(res, 401, { success: false, message: 'Autentikasi diperlukan.' });
   }
 
-  if (session.role !== 'admin') {
-    return sendJSON(res, 403, { success: false, message: 'Akses ditolak. Hanya admin yang dapat menghapus file.' });
-  }
-
   const fileId = parsedUrl.searchParams.get('id');
   if (!fileId || isNaN(Number(fileId))) {
     return sendJSON(res, 400, { success: false, message: 'Parameter id tidak valid.' });
   }
 
   try {
-    const results = await db.query('SELECT stored_name FROM files WHERE id = ? LIMIT 1', [Number(fileId)]);
+    const results = await db.query('SELECT * FROM files WHERE id = ? LIMIT 1', [Number(fileId)]);
     if (results.length === 0) {
       return sendJSON(res, 404, { success: false, message: 'File tidak ditemukan.' });
     }
 
-    const storagePath = path.join(UPLOADS_DIR, results[0].stored_name);
-    await db.query('DELETE FROM files WHERE id = ?', [Number(fileId)]);
+    const item = results[0];
 
-    if (fs.existsSync(storagePath)) {
-      fs.unlinkSync(storagePath);
+    // Periksa akses: hanya pemilik atau admin yang bisa menghapus
+    if (item.user_id !== session.userId && session.role !== 'admin') {
+      return sendJSON(res, 403, { success: false, message: 'Akses ditolak. Anda tidak memiliki izin untuk menghapus item ini.' });
     }
 
-    return sendJSON(res, 200, { success: true, message: 'File berhasil dihapus.' });
+    // Jika adalah folder, hapus semua file/folder di dalamnya secara rekursif
+    if (item.is_folder) {
+      await deleteFolderRecursive(Number(fileId));
+    } else {
+      // Hapus file fisik dari disk
+      if (item.stored_name && fs.existsSync(path.join(UPLOADS_DIR, item.stored_name))) {
+        fs.unlinkSync(path.join(UPLOADS_DIR, item.stored_name));
+      }
+    }
+
+    // Hapus dari database
+    await db.query('DELETE FROM files WHERE id = ?', [Number(fileId)]);
+
+    return sendJSON(res, 200, { success: true, message: 'Item berhasil dihapus.' });
   } catch (err) {
     console.error('[DELETE FILE] Error:', err.message);
-    return sendJSON(res, 500, { success: false, message: 'Gagal menghapus file.' });
+    return sendJSON(res, 500, { success: false, message: 'Gagal menghapus item.' });
   }
 }
 
-module.exports = { uploadFile, listFiles, downloadFile, deleteFile };
+/**
+ * @function deleteFolderRecursive
+ * @description Helper function untuk menghapus folder dan semua isi di dalamnya secara rekursif.
+ * @param {number} folderId - ID folder yang akan dihapus.
+ * @returns {Promise<void>}
+ */
+async function deleteFolderRecursive(folderId) {
+  const children = await db.query('SELECT * FROM files WHERE parent_folder_id = ?', [folderId]);
+  
+  for (const child of children) {
+    if (child.is_folder) {
+      // Rekursi untuk subfolder
+      await deleteFolderRecursive(child.id);
+    } else {
+      // Hapus file fisik
+      if (child.stored_name && fs.existsSync(path.join(UPLOADS_DIR, child.stored_name))) {
+        fs.unlinkSync(path.join(UPLOADS_DIR, child.stored_name));
+      }
+    }
+  }
+
+  // Hapus semua children dari database
+  await db.query('DELETE FROM files WHERE parent_folder_id = ?', [folderId]);
+}
+
+/**
+ * @function createFolder
+ * @description Membuat folder baru di database.
+ * @param {Object} req - Objek request Node.js native.
+ * @param {Object} res - Objek response Node.js native.
+ * @param {Function} sendJSON - Utilitas untuk mengirim respon JSON.
+ * @param {Function} readBody - Utilitas pembaca body stream request.
+ * @returns {Promise<void>}
+ */
+async function createFolder(req, res, sendJSON, readBody) {
+  const session = validateSession(req);
+  if (!session) {
+    return sendJSON(res, 401, { success: false, message: 'Autentikasi diperlukan.' });
+  }
+
+  let bodyBuffer;
+  try {
+    bodyBuffer = await readBody(req);
+  } catch (e) {
+    return sendJSON(res, 400, { success: false, message: 'Gagal membaca data request.' });
+  }
+
+  let data;
+  try {
+    data = JSON.parse(bodyBuffer.toString());
+  } catch (e) {
+    return sendJSON(res, 400, { success: false, message: 'Format JSON tidak valid.' });
+  }
+
+  const { folderName, parentFolderId } = data;
+
+  if (!folderName || folderName.trim().length === 0) {
+    return sendJSON(res, 400, { success: false, message: 'Nama folder tidak boleh kosong.' });
+  }
+
+  // Validasi nama folder
+  if (!/^[a-zA-Z0-9._\-\s()]+$/.test(folderName)) {
+    return sendJSON(res, 400, { success: false, message: 'Nama folder hanya boleh mengandung huruf, angka, titik, dash, underscore, spasi, dan kurung.' });
+  }
+
+  try {
+    // Periksa apakah folder sudah ada di lokasi yang sama
+    let checkQuery = 'SELECT id FROM files WHERE user_id = ? AND original_name = ? AND is_folder = 1';
+    let checkParams = [session.userId, folderName.trim()];
+
+    if (parentFolderId) {
+      checkQuery += ' AND parent_folder_id = ?';
+      checkParams.push(Number(parentFolderId));
+    } else {
+      checkQuery += ' AND parent_folder_id IS NULL';
+    }
+
+    const existing = await db.query(checkQuery, checkParams);
+    if (existing.length > 0) {
+      return sendJSON(res, 409, { success: false, message: 'Folder dengan nama ini sudah ada di lokasi ini.' });
+    }
+
+    // Buat folder baru
+    await db.query(
+      'INSERT INTO files (original_name, is_folder, parent_folder_id, user_id) VALUES (?, 1, ?, ?)',
+      [folderName.trim(), parentFolderId ? Number(parentFolderId) : null, session.userId]
+    );
+
+    return sendJSON(res, 201, {
+      success: true,
+      message: 'Folder berhasil dibuat.',
+      folderName,
+    });
+  } catch (dbErr) {
+    console.error('[CREATE FOLDER] Error:', dbErr.message);
+    return sendJSON(res, 500, { success: false, message: 'Gagal membuat folder.' });
+  }
+}
+
+/**
+ * @function renameItem
+ * @description Mengganti nama file atau folder.
+ * @param {Object} req - Objek request Node.js native.
+ * @param {Object} res - Objek response Node.js native.
+ * @param {Function} sendJSON - Utilitas untuk mengirim respon JSON.
+ * @param {Function} readBody - Utilitas pembaca body stream request.
+ * @returns {Promise<void>}
+ */
+async function renameItem(req, res, sendJSON, readBody) {
+  const session = validateSession(req);
+  if (!session) {
+    return sendJSON(res, 401, { success: false, message: 'Autentikasi diperlukan.' });
+  }
+
+  let bodyBuffer;
+  try {
+    bodyBuffer = await readBody(req);
+  } catch (e) {
+    return sendJSON(res, 400, { success: false, message: 'Gagal membaca data request.' });
+  }
+
+  let data;
+  try {
+    data = JSON.parse(bodyBuffer.toString());
+  } catch (e) {
+    return sendJSON(res, 400, { success: false, message: 'Format JSON tidak valid.' });
+  }
+
+  const { id, newName } = data;
+
+  if (!id || isNaN(Number(id))) {
+    return sendJSON(res, 400, { success: false, message: 'ID tidak valid.' });
+  }
+
+  if (!newName || newName.trim().length === 0) {
+    return sendJSON(res, 400, { success: false, message: 'Nama baru tidak boleh kosong.' });
+  }
+
+  try {
+    // Ambil item yang akan direname
+    const results = await db.query('SELECT * FROM files WHERE id = ? LIMIT 1', [Number(id)]);
+    if (results.length === 0) {
+      return sendJSON(res, 404, { success: false, message: 'Item tidak ditemukan.' });
+    }
+
+    const item = results[0];
+
+    // Periksa akses: hanya pemilik atau admin yang bisa rename
+    if (item.user_id !== session.userId && session.role !== 'admin') {
+      return sendJSON(res, 403, { success: false, message: 'Akses ditolak. Anda tidak memiliki izin untuk mengganti nama item ini.' });
+    }
+
+    // Validasi nama
+    if (!/^[a-zA-Z0-9._\-\s()]+$/.test(newName)) {
+      return sendJSON(res, 400, { success: false, message: 'Nama hanya boleh mengandung huruf, angka, titik, dash, underscore, spasi, dan kurung.' });
+    }
+
+    // Periksa apakah nama sudah digunakan di lokasi yang sama
+    let checkQuery = 'SELECT id FROM files WHERE user_id = ? AND original_name = ? AND id != ?';
+    let checkParams = [item.user_id, newName.trim(), Number(id)];
+
+    if (item.parent_folder_id) {
+      checkQuery += ' AND parent_folder_id = ?';
+      checkParams.push(item.parent_folder_id);
+    } else {
+      checkQuery += ' AND parent_folder_id IS NULL';
+    }
+
+    const existing = await db.query(checkQuery, checkParams);
+    if (existing.length > 0) {
+      return sendJSON(res, 409, { success: false, message: 'Nama sudah digunakan di lokasi ini.' });
+    }
+
+    // Update nama
+    await db.query('UPDATE files SET original_name = ? WHERE id = ?', [newName.trim(), Number(id)]);
+
+    return sendJSON(res, 200, {
+      success: true,
+      message: 'Item berhasil direname.',
+      newName: newName.trim(),
+    });
+  } catch (dbErr) {
+    console.error('[RENAME ITEM] Error:', dbErr.message);
+    return sendJSON(res, 500, { success: false, message: 'Gagal mengganti nama item.' });
+  }
+}
+
+module.exports = { uploadFile, listFiles, downloadFile, deleteFile, createFolder, renameItem };

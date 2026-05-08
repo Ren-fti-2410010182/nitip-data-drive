@@ -22,6 +22,11 @@ async function authRoutes(req, res, pathname, method, sendJSON, readBody) {
     return;
   }
 
+  if (method === 'GET' && pathname === '/api/auth/status') {
+    await authController.checkStatus(req, res, sendJSON);
+    return;
+  }
+
   if (method === 'POST' && pathname === '/api/auth/register') {
     await authController.register(req, res, sendJSON, readBody);
     return;

@@ -1,21 +1,74 @@
-# Server src Folder
+# server/src — Kode Sumber Backend
 
-Folder `server/src/` adalah kode sumber backend aplikasi.
+Folder `server/src/` adalah **kode sumber backend** aplikasi Nitip Data Drive yang berjalan di Node.js.
 
-## Struktur Utama
+---
 
-- `app.js` - entry point aplikasi, router utama, dan penyajian file statis.
-- `config/` - konfigurasi koneksi database.
-- `controllers/` - logika bisnis untuk autentikasi, upload/unduh file, dan manajemen pengguna.
-- `middleware/` - fungsi autentikasi dan manajemen sesi.
-- `routes/` - pemetaan endpoint API ke controller.
-- `utils/` - helper untuk membaca body request, mengirim JSON, dan parsing multipart.
-- `uploads/` - folder penyimpanan file yang diunggah.
-- `test_mysql_connect.js` - skrip uji koneksi MySQL.
+## Struktur Folder
 
-## Alur Request
+```
+server/src/
+├── app.js                  # Entry point: HTTP server + router utama + static file serving
+├── test_mysql_connect.js   # Skrip bantu untuk menguji koneksi MySQL secara manual
+│
+├── config/
+│   └── database.js         # Pool koneksi MySQL (promise-based query wrapper)
+│
+├── middleware/
+│   └── auth.js             # Manajemen sesi in-memory: create, validate, destroy session
+│
+├── controllers/
+│   ├── authController.js   # Login, register, logout, checkStatus
+│   ├── fileController.js   # Upload, list, download, folder, rename, delete (rekursif)
+│   └── userController.js   # Manajemen pengguna: approve, reject, toggle, update, delete
+│
+├── routes/
+│   ├── authRoutes.js       # Pemetaan /api/auth/* ke authController
+│   ├── fileRoutes.js       # Pemetaan /api/files/* ke fileController
+│   └── userRoutes.js       # Pemetaan /api/users/* ke userController
+│
+├── utils/
+│   ├── httpUtils.js        # sendJSON, readBody, serveStaticFile
+│   └── multipartParser.js  # Custom parser multipart/form-data
+│
+└── uploads/                # Berkas fisik yang diunggah pengguna (auto-created)
+```
 
-1. `app.js` menerima request HTTP.
-2. `routes/` memilih handler berdasarkan path dan method.
-3. `controllers/` melakukan operasi database atau file.
-4. `utils/` membantu parsing request dan respon.
+---
+
+## Alur Request HTTP
+
+```
+Browser
+  │
+  ▼
+app.js  (requestHandler)
+  │
+  ├── OPTIONS  → Balas CORS preflight
+  ├── /api/auth/*  → authRoutes.js  → authController.js
+  ├── /api/files/* → fileRoutes.js  → fileController.js
+  ├── /api/users/* → userRoutes.js  → userController.js
+  ├── /           → Redirect 302 ke /views/login.html
+  └── /* (statis) → serveStaticFile() dari folder public/
+```
+
+**Detail setiap lapisan:**
+
+1. **`app.js`** — menerima semua request HTTP, parsing URL, menambahkan log, dan mendelegasikan ke router yang tepat berdasarkan prefix path.
+2. **`routes/`** — mencocokkan `pathname` + `method` secara eksplisit dan memanggil fungsi controller yang sesuai.
+3. **`controllers/`** — memanggil `validateSession()` dari `middleware/auth.js` untuk autentikasi, melakukan validasi bisnis, lalu berinteraksi dengan database.
+4. **`config/database.js`** — menyediakan `db.query(sql, params)` berbasis Promise untuk semua operasi MySQL.
+5. **`utils/`** — menyediakan `sendJSON`, `readBody`, dan `serveStaticFile` agar controller tidak perlu mengurus detail HTTP secara langsung.
+
+---
+
+## Keamanan
+
+| Mekanisme | Implementasi |
+|---|---|
+| Autentikasi | Bearer Token (64-char hex acak) disimpan di `sessions{}` in-memory |
+| Hash password | SHA-256 via `crypto` built-in |
+| Path traversal | `targetPath.startsWith(PUBLIC_DIR)` di `app.js` |
+| Akses berkas | Hanya pemilik atau admin yang boleh download/delete/rename |
+| Pemblokiran realtime | `destroySessionsByUserId()` dipanggil saat akun dinonaktifkan |
+| Anti-cache | Header `Cache-Control: no-store` pada semua respons JSON |
