@@ -493,11 +493,11 @@ Tabel menampilkan semua pengguna dengan status badge
 ```
 Admin login → Panel Admin → Tab Berkas
         ↓
-Tabel menampilkan semua berkas dari semua pengguna
+Tabel menampilkan semua berkas dan folder tingkat utama dari semua pengguna
 
-[Pratinjau] → Klik 👁  → Modal pratinjau
-[Unduh]     → Klik ⬇  → Download berkas
-[Hapus]     → Klik 🗑️ → Dialog konfirmasi → Hapus dari disk & DB
+[Pratinjau] → Klik 👁  → Modal pratinjau (khusus berkas)
+[Unduh]     → Klik ⬇  → Download berkas (khusus berkas)
+[Hapus]     → Klik 🗑️ → Dialog konfirmasi → Hapus dari disk & DB (berkas & folder rekursif)
 ```
 
 ---

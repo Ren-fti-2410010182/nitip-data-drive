@@ -492,19 +492,32 @@ async function loadFiles() {
     tbody.innerHTML = '';
     data.files.forEach((file) => {
       const date = new Date(file.uploaded_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
-      const ext = file.mime_type.split('/')[1]?.toUpperCase() || '?';
+      const ext = file.is_folder ? 'FOLDER' : (file.mime_type?.split('/')[1]?.toUpperCase() || '?');
       
+      let actionsHTML = '';
+      if (file.is_folder) {
+        actionsHTML = `
+          <button class="btn-icon danger" title="Hapus" onclick="deleteFile(${file.id}, '${file.original_name.replace(/'/g, "\\'")}')">🗑</button>
+        `;
+      } else {
+        actionsHTML = `
+          <button class="btn-icon" title="Lihat" onclick="viewFile(${file.id}, '${file.mime_type}', '${file.original_name.replace(/'/g, "\\'")}')">👁</button>
+          <button class="btn-icon" title="Unduh" onclick="downloadFile(${file.id}, '${file.original_name.replace(/'/g, "\\'")}')">⬇</button>
+          <button class="btn-icon danger" title="Hapus" onclick="deleteFile(${file.id}, '${file.original_name.replace(/'/g, "\\'")}')">🗑</button>
+        `;
+      }
+
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td title="${file.original_name}" style="max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight: 500;">${file.original_name}</td>
-        <td>${formatSize(file.file_size)}</td>
+        <td title="${file.original_name}" style="max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight: 500;">
+          ${file.is_folder ? '📁 ' : ''}${file.original_name}
+        </td>
+        <td>${file.is_folder ? '—' : formatSize(file.file_size)}</td>
         <td><span class="badge" style="background:var(--surface-variant); color:var(--text); border:1px solid var(--border-light)">${ext}</span></td>
         <td>${file.uploader}</td>
         <td>${date}</td>
         <td style="display:flex; gap:4px;">
-          <button class="btn-icon" title="Lihat" onclick="viewFile(${file.id}, '${file.mime_type}', '${file.original_name.replace(/'/g, "\\'")}')">👁</button>
-          <button class="btn-icon" title="Unduh" onclick="downloadFile(${file.id}, '${file.original_name.replace(/'/g, "\\'")}')">⬇</button>
-          <button class="btn-icon danger" title="Hapus" onclick="deleteFile(${file.id}, '${file.original_name.replace(/'/g, "\\'")}')">🗑</button>
+          ${actionsHTML}
         </td>
       `;
       tbody.appendChild(tr);
