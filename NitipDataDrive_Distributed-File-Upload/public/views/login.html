@@ -6,12 +6,25 @@
   <title>Login — Nitip Data Drive</title>
   <link rel="stylesheet" href="../styles/global.css">
   <link rel="stylesheet" href="../styles/login.css">
+  <link rel="icon" type="image/png" href="../asset/Logo.png">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script>
+    (function() {
+      const theme = localStorage.getItem('theme') || 'light';
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
 </head>
 <body>
+
+<button id="themeToggle" class="btn btn-secondary" style="position: fixed; top: 24px; right: 24px; border-radius: 50%; width: 44px; height: 44px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; z-index: 1000; box-shadow: var(--shadow-md);">
+  <i class="fa-solid fa-moon"></i>
+</button>
 
 <div class="login-page">
   <div class="login-card">
     <div class="login-header">
+      <img src="../asset/Logo.png" alt="Logo" style="width: 80px; height: 80px; margin-bottom: 16px; border-radius: 50%; object-fit: cover; box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3); border: 2px solid rgba(255, 255, 255, 0.2);">
       <h1>Nitip Data Drive</h1>
       <p>Sistem Penyimpanan Berkas Terdistribusi</p>
     </div>
@@ -32,15 +45,15 @@
       Masuk
     </button>
 
-    <div style="text-align: center; margin-top: 24px; font-size: 0.875rem; color: rgba(255,255,255,0.75);">
+    <div style="text-align: center; margin-top: 24px; font-size: 0.875rem; color: var(--text-muted);">
       Belum punya akun? 
-      <a href="#" id="linkRegister" style="color: var(--primary-bg); font-weight: 600; text-decoration: none; transition: color 0.2s;">Daftar di sini</a>
+      <a href="#" id="linkRegister" style="color: var(--primary); font-weight: 600; text-decoration: none; transition: color 0.2s;">Daftar di sini</a>
     </div>
 
     <!-- Panel Registrasi -->
     <div id="registerPanel" style="display:none; margin-top:24px; padding-top:24px; border-top:1px solid var(--border-light);">
       <h3 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 8px; text-align: center;">Buat Akun Baru</h3>
-      <p style="font-size: 0.8rem; color: rgba(255,255,255,0.7); text-align: center; margin-bottom: 16px;">
+      <p style="font-size: 0.8rem; color: var(--text-muted); text-align: center; margin-bottom: 16px;">
         Akun akan disetujui oleh admin sebelum bisa login.
       </p>
 
@@ -168,6 +181,23 @@ document.getElementById('btnRegister').addEventListener('click', async () => {
 
 passwordInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') btnLogin.click();
+});
+
+// Theme Toggle Script
+const themeToggle = document.getElementById('themeToggle');
+function updateToggleIcon(theme) {
+  const icon = themeToggle.querySelector('i');
+  icon.className = theme === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+}
+const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+updateToggleIcon(currentTheme);
+
+themeToggle.addEventListener('click', () => {
+  const activeTheme = document.documentElement.getAttribute('data-theme') || 'light';
+  const newTheme = activeTheme === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', newTheme);
+  localStorage.setItem('theme', newTheme);
+  updateToggleIcon(newTheme);
 });
 </script>
 </body>

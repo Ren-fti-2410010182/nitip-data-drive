@@ -5,20 +5,20 @@
   min-height: 100vh;
   align-items: center;
   justify-content: center;
-  background: radial-gradient(circle at 0% 0%, #0d1b2a 0%, #1b263b 50%, #415a77 100%);
+  background: var(--layout-bg);
   padding: 24px;
 }
 
 .login-card {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--card-bg);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   width: 100%;
   max-width: 440px;
   padding: 48px 40px;
   border-radius: 24px;
-  box-shadow: 0 20px 50px rgba(0,0,0,0.3);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: var(--card-shadow);
+  border: 1px solid var(--card-border);
   transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
@@ -34,45 +34,47 @@
 .login-header h1 {
   font-size: 2.25rem;
   font-weight: 800;
-  background: linear-gradient(135deg, #c2e7ff 0%, #ffffff 100%);
+  background: var(--login-header-gradient);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
   margin-bottom: 10px;
   letter-spacing: -0.5px;
 }
 
 .login-header p {
-  color: #a8c7fa;
+  color: var(--login-header-p);
   font-size: 0.95rem;
   font-weight: 500;
 }
 
 /* Custom form styles inside Login Card to support dark theme readability */
 .login-card .form-group label {
-  color: #e0e2e0;
+  color: var(--login-label);
   font-weight: 600;
 }
 
 .login-card .form-control {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #ffffff;
+  background: var(--login-input-bg);
+  border: 1px solid var(--login-input-border);
+  color: var(--login-input-text);
   border-radius: var(--radius-md);
   padding: 14px 18px;
 }
 
 .login-card .form-control:focus {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: var(--primary-bg-hover);
-  box-shadow: 0 0 0 4px rgba(194, 231, 255, 0.15);
+  background: var(--login-input-bg);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px var(--primary-bg);
 }
 
 .login-card .form-control::placeholder {
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--login-input-placeholder);
 }
 
 .login-card .btn-primary {
-  background: linear-gradient(135deg, var(--primary) 0%, #1a73e8 100%);
+  background: linear-gradient(135deg, var(--primary) 0%, #1e2266 100%);
+  color: var(--login-btn-text);
   padding: 14px;
   font-weight: 600;
   letter-spacing: 0.5px;
@@ -81,8 +83,8 @@
 }
 
 .login-card .btn-primary:hover {
-  background: linear-gradient(135deg, var(--primary-hover) 0%, #1557b0 100%);
-  box-shadow: 0 8px 20px rgba(11, 87, 208, 0.4);
+  background: linear-gradient(135deg, var(--primary-hover) 0%, #292e8a 100%);
+  box-shadow: 0 8px 20px var(--login-btn-shadow);
 }
 
 .login-card .alert {
@@ -91,34 +93,36 @@
 }
 
 .login-card .alert-error {
-  background: rgba(179, 38, 30, 0.2);
-  color: #f2b8b5;
-  border-color: rgba(179, 38, 30, 0.4);
+  background: var(--danger-bg);
+  color: var(--danger);
+  border-color: var(--danger);
 }
 
 .login-card .alert-success {
-  background: rgba(20, 108, 46, 0.2);
-  color: #c4eed0;
-  border-color: rgba(20, 108, 46, 0.4);
+  background: var(--success-bg);
+  color: var(--success);
+  border-color: var(--success);
 }
 
 /* Register Panel Premium Styling */
 #registerPanel {
-  border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-top: 1px solid var(--border-light) !important;
 }
 
 #registerPanel h3 {
-  color: #ffffff;
+  color: var(--text);
 }
 
 .login-card .btn-success {
-  background: linear-gradient(135deg, #146c2e 0%, #1e8e3e 100%);
+  background: var(--success);
+  color: #ffffff;
   padding: 14px;
   font-weight: 600;
   border-radius: var(--radius-md);
 }
 
 .login-card .btn-success:hover {
-  background: linear-gradient(135deg, #0f5223 0%, #137333 100%);
-  box-shadow: 0 8px 20px rgba(20, 108, 46, 0.4);
+  background: var(--success);
+  opacity: 0.9;
+  box-shadow: 0 8px 20px rgba(15, 157, 88, 0.3);
 }

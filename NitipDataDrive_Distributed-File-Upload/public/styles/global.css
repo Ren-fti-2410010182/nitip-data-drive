@@ -3,22 +3,39 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap');
 
 :root {
-  --primary: #0b57d0;
-  --primary-hover: #0842a0;
-  --primary-bg: #c2e7ff;
-  --primary-bg-hover: #a8c7fa;
-  --success: #146c2e;
-  --success-bg: #c4eed0;
-  --danger: #b3261e;
-  --danger-bg: #f9dedc;
+  --primary: #0e1030;
+  --primary-hover: #1b1e59;
+  --primary-bg: #e2f9fa;
+  --primary-bg-hover: #c4f3f5;
+  --success: #0f9d58;
+  --success-bg: #e6f4ea;
+  --danger: #db4437;
+  --danger-bg: #fce8e6;
   --secondary: #5f6368;
   --surface: #ffffff;
-  --surface-variant: #f0f4f9;
-  --bg: #f8fafd;
-  --text: #1f1f1f;
-  --text-muted: #444746;
-  --border: #c7c7c7;
-  --border-light: #e0e2e0;
+  --surface-variant: #f0f4f8;
+  --bg: #f8fafc;
+  --text: #0e1030;
+  --text-muted: #5f6775;
+  --border: #cfd4db;
+  --border-light: #e8ebf0;
+  
+  --sidebar-bg: rgba(255, 255, 255, 0.7);
+  --header-bg: rgba(255, 255, 255, 0.75);
+  --layout-bg: radial-gradient(circle at 50% 50%, #f0f4f9 0%, #e2e8f0 100%);
+  
+  --card-bg: rgba(255, 255, 255, 0.75);
+  --card-border: rgba(14, 16, 48, 0.08);
+  --card-shadow: 0 20px 50px rgba(14, 16, 48, 0.08);
+  --login-header-gradient: linear-gradient(135deg, var(--primary) 0%, #1b1e59 100%);
+  --login-header-p: var(--text-muted);
+  --login-label: var(--text);
+  --login-input-bg: var(--surface);
+  --login-input-border: var(--border);
+  --login-input-text: var(--text);
+  --login-input-placeholder: rgba(14, 16, 48, 0.4);
+  --login-btn-text: #ffffff;
+  --login-btn-shadow: rgba(14, 16, 48, 0.25);
   
   --radius-sm: 8px;
   --radius-md: 12px;
@@ -28,6 +45,49 @@
   --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
   --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
   --shadow-lg: 0 12px 24px rgba(0,0,0,0.12);
+}
+
+[data-theme="dark"] {
+  --primary: #5ce1e6;
+  --primary-hover: #3ac7cc;
+  --primary-bg: rgba(92, 225, 230, 0.12);
+  --primary-bg-hover: rgba(92, 225, 230, 0.22);
+  --success: #0f9d58;
+  --success-bg: rgba(15, 157, 88, 0.15);
+  --danger: #db4437;
+  --danger-bg: rgba(219, 68, 55, 0.15);
+  --secondary: #a5a8cd;
+  --surface: #16183e;
+  --surface-variant: #212457;
+  --bg: #0e1030;
+  --text: #ffffff;
+  --text-muted: #a5a8cd;
+  --border: #2c2f63;
+  --border-light: rgba(255, 255, 255, 0.08);
+  
+  --sidebar-bg: rgba(22, 24, 62, 0.75);
+  --header-bg: rgba(22, 24, 62, 0.75);
+  --layout-bg: radial-gradient(circle at 50% 50%, #16183e 0%, #0e1030 100%);
+  
+  --card-bg: rgba(22, 24, 62, 0.45);
+  --card-border: rgba(255, 255, 255, 0.08);
+  --card-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+  --login-header-gradient: linear-gradient(135deg, var(--primary) 0%, #ffffff 100%);
+  --login-header-p: #a8ecef;
+  --login-label: #e0e2e0;
+  --login-input-bg: rgba(255, 255, 255, 0.05);
+  --login-input-border: rgba(255, 255, 255, 0.1);
+  --login-input-text: #ffffff;
+  --login-input-placeholder: rgba(255, 255, 255, 0.4);
+  --login-btn-text: #0e1030;
+  --login-btn-shadow: rgba(92, 225, 230, 0.35);
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: #3e4282;
+}
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: #5055a6;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -212,20 +272,21 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #e9ecef;
+  background: var(--bg);
 }
 .view-modal-content {
   max-width: 100%;
   max-height: 100%;
   box-shadow: var(--shadow-sm);
-  background: white;
+  background: var(--surface);
 }
 .view-modal-text {
   width: 100%;
   height: 100%;
   text-align: left;
   white-space: pre-wrap;
-  background: white;
+  background: var(--surface);
+  color: var(--text);
   padding: 24px;
   font-family: monospace;
   overflow-y: auto;
