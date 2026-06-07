@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Waktu pembuatan: 03 Bulan Mei 2026 pada 14.30
+-- Waktu pembuatan: 07 Jun 2026 pada 03.52
 -- Versi server: 10.4.32-MariaDB
 -- Versi PHP: 8.2.12
 
@@ -20,6 +20,8 @@ SET time_zone = "+00:00";
 --
 -- Database: `nitip_data_drive`
 --
+CREATE DATABASE IF NOT EXISTS `nitip_data_drive` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+USE `nitip_data_drive`;
 
 -- --------------------------------------------------------
 
@@ -30,11 +32,11 @@ SET time_zone = "+00:00";
 CREATE TABLE `files` (
   `id` int(10) UNSIGNED NOT NULL,
   `original_name` varchar(255) NOT NULL COMMENT 'Nama file asli dari pengguna',
-  `stored_name` varchar(100) COMMENT 'Nama file di disk (unik, hasil hash) - NULL untuk folder',
-  `file_size` bigint(20) UNSIGNED COMMENT 'Ukuran file dalam byte - NULL untuk folder',
-  `mime_type` varchar(100) COMMENT 'Tipe MIME file - NULL untuk folder',
+  `stored_name` varchar(100) DEFAULT NULL COMMENT 'Nama file di disk (unik, hasil hash) - NULL untuk folder',
+  `file_size` bigint(20) UNSIGNED DEFAULT NULL COMMENT 'Ukuran file dalam byte - NULL untuk folder',
+  `mime_type` varchar(100) DEFAULT NULL COMMENT 'Tipe MIME file - NULL untuk folder',
   `is_folder` tinyint(1) NOT NULL DEFAULT 0 COMMENT 'Bernilai 1 jika adalah folder, 0 jika file',
-  `parent_folder_id` int(10) UNSIGNED COMMENT 'FK ke folder parent (NULL jika di root)',
+  `parent_folder_id` int(10) UNSIGNED DEFAULT NULL COMMENT 'FK ke folder parent (NULL jika di root)',
   `user_id` int(10) UNSIGNED NOT NULL COMMENT 'FK ke tabel users',
   `uploaded_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
@@ -109,8 +111,8 @@ ALTER TABLE `users`
 -- Ketidakleluasaan untuk tabel `files`
 --
 ALTER TABLE `files`
-  ADD CONSTRAINT `fk_files_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_files_parent_folder` FOREIGN KEY (`parent_folder_id`) REFERENCES `files` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+  ADD CONSTRAINT `fk_files_parent_folder` FOREIGN KEY (`parent_folder_id`) REFERENCES `files` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_files_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
