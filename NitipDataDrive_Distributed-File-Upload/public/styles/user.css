@@ -127,8 +127,8 @@
   flex-direction: column;
 }
 .file-card:hover {
-  background: #e1e5ea;
-  border-color: var(--border-light);
+  background: var(--primary-bg);
+  border-color: var(--primary);
 }
 .file-card-top {
   display: flex;
@@ -160,7 +160,7 @@
   margin-top: auto;
   padding-top: 12px;
   display: flex;
-  gap: 8px;
+  gap: 6px;
 }
 .btn-icon {
   background: transparent;

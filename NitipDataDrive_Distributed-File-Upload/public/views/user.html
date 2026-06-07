@@ -6,6 +6,14 @@
   <title>Drive Saya — Nitip Data Drive</title>
   <link rel="stylesheet" href="../styles/global.css">
   <link rel="stylesheet" href="../styles/user.css">
+  <link rel="icon" type="image/png" href="../asset/Logo.png">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script>
+    (function() {
+      const theme = localStorage.getItem('theme') || 'light';
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
 </head>
 <body>
 
@@ -13,26 +21,26 @@
   <!-- Sidebar -->
   <aside class="app-sidebar">
     <div class="app-brand">
-      <span style="font-size: 1.5rem;">📦</span> Nitip Drive
+      <img src="../asset/Logo.png" alt="Logo" style="width: 32px; height: 32px; margin-right: 8px; vertical-align: middle; border-radius: 50%; object-fit: cover;"> Nitip Drive
     </div>
     
     <input type="file" id="fileInput" class="file-input-hidden">
-    <button class="btn-upload-new" id="btnUploadTrigger" style="width: 100%; margin-bottom: 8px;">
-      <span style="font-size: 1.25rem;">➕</span> Unggah File
+    <button class="btn-upload-new" id="btnUploadTrigger" style="width: 100%; margin-bottom: 8px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+      <i class="fa-solid fa-cloud-arrow-up" style="font-size: 1.1rem;"></i> Unggah File
     </button>
-    <button class="btn-upload-new" id="btnCreateFolder" style="width: 100%; margin-bottom: 24px; background-color: var(--surface-variant);">
-      <span style="font-size: 1.25rem;">📁</span> Buat Folder
+    <button class="btn-upload-new" id="btnCreateFolder" style="width: 100%; margin-bottom: 24px; background-color: var(--surface-variant); display: flex; align-items: center; justify-content: center; gap: 8px;">
+      <i class="fa-solid fa-folder-plus" style="font-size: 1.1rem;"></i> Buat Folder
     </button>
     
     <nav class="nav-menu">
-      <div class="nav-item active" style="cursor: pointer;" onclick="navigateToFolder(null, 'Drive Saya')">
-        <span>📂</span> Drive Saya
+      <div class="nav-item active" style="cursor: pointer; display: flex; align-items: center; gap: 8px;" onclick="navigateToFolder(null, 'Drive Saya')">
+        <i class="fa-solid fa-hard-drive"></i> Drive Saya
       </div>
     </nav>
     
     <div style="margin-top: auto; padding: 16px 0;">
-      <button class="btn btn-secondary btn-block" id="btnLogout" style="justify-content: flex-start; padding-left: 24px;">
-        🚪 Keluar
+      <button class="btn btn-secondary btn-block" id="btnLogout" style="justify-content: flex-start; padding-left: 24px; display: flex; align-items: center; gap: 8px;">
+        <i class="fa-solid fa-right-from-bracket"></i> Keluar
       </button>
     </div>
   </aside>
@@ -41,7 +49,10 @@
   <main class="app-main">
     <header class="app-header">
       <div class="header-title">Drive Saya</div>
-      <div class="header-actions">
+      <div class="header-actions" style="display: flex; align-items: center; gap: 16px;">
+        <button id="themeToggle" class="btn btn-secondary" style="border-radius: 50%; width: 38px; height: 38px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; box-shadow: var(--shadow-sm); cursor: pointer;">
+          <i class="fa-solid fa-moon"></i>
+        </button>
         <span id="welcomeMsg" style="font-size: 0.875rem; color: var(--text-muted); font-weight: 500;"></span>
       </div>
     </header>
@@ -51,7 +62,7 @@
 
       <!-- Search Bar -->
       <div style="margin-bottom: 16px; display: flex; gap: 12px;">
-        <input type="text" id="searchInput" class="form-control" placeholder="🔍 Cari file..." style="max-width: 300px; padding: 8px 16px; border-radius: 20px; border: 1px solid var(--border-light); font-size: 0.9rem;">
+        <input type="text" id="searchInput" class="form-control" placeholder="Cari file..." style="max-width: 300px; padding: 8px 16px 8px 36px; border-radius: 20px; border: 1px solid var(--border-light); font-size: 0.9rem; background: url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2216%22 height=%2216%22 fill=%22%2364748b%22 class=%22bi bi-search%22 viewBox=%220 0 16 16%22><path d=%22M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0%22/></svg>') no-repeat 12px center; background-size: 14px;">
       </div>
 
       <!-- Breadcrumbs Nav -->
@@ -59,7 +70,7 @@
 
       <div id="fileContainer" style="height: 100%;">
         <div id="noFilesMsg" class="empty-state" style="display: none;">
-          <div class="empty-state-icon">📭</div>
+          <div class="empty-state-icon" style="opacity: 0.4;"><i class="fa-regular fa-folder-open"></i></div>
           <h3>Tempat untuk semua file Anda</h3>
           <p>Gunakan tombol "Baru" untuk mengunggah file.</p>
         </div>
@@ -71,8 +82,8 @@
 </div>
 
 <!-- Drag & Drop Overlay -->
-<div id="dragOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(66, 133, 244, 0.9); z-index:9999; align-items:center; justify-content:center; color:white; font-size:2rem; font-weight:700; flex-direction:column; gap:16px;">
-  <span>☁️</span>
+<div id="dragOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(66, 133, 244, 0.95); z-index:9999; align-items:center; justify-content:center; color:white; font-size:2rem; font-weight:700; flex-direction:column; gap:16px; backdrop-filter: blur(4px);">
+  <i class="fa-solid fa-cloud-arrow-up" style="font-size: 4rem; animation: bounce 2s infinite;"></i>
   <span>Lepaskan file untuk mengunggah</span>
 </div>
 
@@ -104,16 +115,21 @@
 
 <!-- Create Folder Modal -->
 <div id="createFolderModal" class="view-modal-overlay" onclick="if(event.target===this) closeCreateFolderModal()">
-  <div class="view-modal" style="width: 400px; height: auto;">
-    <div class="view-modal-header">
-      <div class="view-modal-title">Buat Folder Baru</div>
+  <div class="view-modal" style="max-width: 400px; height: auto; border-radius: 20px; box-shadow: var(--shadow-lg); border: none;">
+    <div class="view-modal-header" style="background: transparent; border-bottom: 1px solid var(--border-light); padding: 20px 24px;">
+      <div class="view-modal-title" style="font-weight: 700; display: flex; align-items: center; gap: 8px;">
+        <i class="fa-solid fa-folder-plus" style="color: var(--primary);"></i> Buat Folder Baru
+      </div>
       <button class="view-modal-close" onclick="closeCreateFolderModal()">×</button>
     </div>
-    <div class="view-modal-form-body">
-      <input type="text" id="folderNameInput" class="form-control" placeholder="Nama folder..." style="padding: 10px; border: 1px solid var(--border-light); border-radius: 4px; width: 100%; box-sizing: border-box;">
-      <div style="display: flex; gap: 8px; justify-content: flex-end;">
-        <button class="btn btn-secondary" onclick="closeCreateFolderModal()" style="padding: 8px 16px;">Batal</button>
-        <button class="btn btn-primary" onclick="submitCreateFolder()" style="padding: 8px 16px;">Buat</button>
+    <div class="view-modal-form-body" style="padding: 24px;">
+      <div class="form-group" style="margin-bottom: 20px; display: flex; flex-direction: column;">
+        <label for="folderNameInput" style="font-weight: 600; margin-bottom: 8px; font-size: 0.9rem; color: var(--text);">Nama Folder</label>
+        <input type="text" id="folderNameInput" class="form-control" placeholder="Masukkan nama folder..." style="padding: 12px 16px; border-radius: 12px;">
+      </div>
+      <div style="display: flex; gap: 12px; justify-content: flex-end; width: 100%;">
+        <button class="btn btn-secondary" onclick="closeCreateFolderModal()" style="border-radius: 12px; padding: 10px 20px; font-weight: 600;">Batal</button>
+        <button class="btn btn-primary" onclick="submitCreateFolder()" style="border-radius: 12px; padding: 10px 20px; font-weight: 600;">Buat</button>
       </div>
     </div>
   </div>
@@ -121,16 +137,21 @@
 
 <!-- Rename Modal -->
 <div id="renameModal" class="view-modal-overlay" onclick="if(event.target===this) closeRenameModal()">
-  <div class="view-modal" style="width: 400px; height: auto;">
-    <div class="view-modal-header">
-      <div class="view-modal-title">Ubah Nama</div>
+  <div class="view-modal" style="max-width: 400px; height: auto; border-radius: 20px; box-shadow: var(--shadow-lg); border: none;">
+    <div class="view-modal-header" style="background: transparent; border-bottom: 1px solid var(--border-light); padding: 20px 24px;">
+      <div class="view-modal-title" style="font-weight: 700; display: flex; align-items: center; gap: 8px;">
+        <i class="fa-solid fa-pen-to-square" style="color: var(--primary);"></i> Ubah Nama
+      </div>
       <button class="view-modal-close" onclick="closeRenameModal()">×</button>
     </div>
-    <div class="view-modal-form-body">
-      <input type="text" id="renameInput" class="form-control" placeholder="Nama baru..." style="padding: 10px; border: 1px solid var(--border-light); border-radius: 4px; width: 100%; box-sizing: border-box;">
-      <div style="display: flex; gap: 8px; justify-content: flex-end;">
-        <button class="btn btn-secondary" onclick="closeRenameModal()" style="padding: 8px 16px;">Batal</button>
-        <button class="btn btn-primary" onclick="submitRename()" style="padding: 8px 16px;">Ubah</button>
+    <div class="view-modal-form-body" style="padding: 24px;">
+      <div class="form-group" style="margin-bottom: 20px; display: flex; flex-direction: column;">
+        <label for="renameInput" style="font-weight: 600; margin-bottom: 8px; font-size: 0.9rem; color: var(--text);">Nama Baru</label>
+        <input type="text" id="renameInput" class="form-control" placeholder="Masukkan nama baru..." style="padding: 12px 16px; border-radius: 12px;">
+      </div>
+      <div style="display: flex; gap: 12px; justify-content: flex-end; width: 100%;">
+        <button class="btn btn-secondary" onclick="closeRenameModal()" style="border-radius: 12px; padding: 10px 20px; font-weight: 600;">Batal</button>
+        <button class="btn btn-primary" onclick="submitRename()" style="border-radius: 12px; padding: 10px 20px; font-weight: 600;">Ubah</button>
       </div>
     </div>
   </div>
@@ -138,19 +159,19 @@
 
 <!-- Custom Confirm Delete Modal -->
 <div id="confirmDeleteModal" class="view-modal-overlay" onclick="if(event.target===this) closeConfirmDeleteModal()">
-  <div class="view-modal" style="width: 450px; height: auto;">
-    <div class="view-modal-header" style="background: var(--danger-bg); border-bottom: 1px solid #f2b8b5; padding: 16px 24px;">
+  <div class="view-modal" style="max-width: 450px; height: auto; border-radius: 20px; box-shadow: var(--shadow-lg); border: none;">
+    <div class="view-modal-header" style="background: var(--danger-bg); border-bottom: 1px solid rgba(219, 68, 55, 0.2); padding: 20px 24px;">
       <div class="view-modal-title" style="color: var(--danger); font-weight: 700; display: flex; align-items: center; gap: 8px;">
-        ⚠️ Konfirmasi Hapus
+        <i class="fa-solid fa-triangle-exclamation"></i> Konfirmasi Hapus
       </div>
       <button class="view-modal-close" onclick="closeConfirmDeleteModal()" style="color: var(--danger); font-size: 1.5rem; background: transparent; border: none; cursor: pointer;">×</button>
     </div>
-    <div class="view-modal-form-body" style="text-align: left;">
+    <div class="view-modal-form-body" style="padding: 24px; text-align: left; gap: 16px;">
       <p id="confirmDeleteMsg" style="font-size: 1rem; color: var(--text); margin-bottom: 0px; line-height: 1.5; font-weight: 500;"></p>
-      <p id="confirmDeleteSubmsg" style="font-size: 0.875rem; color: var(--danger); font-weight: 500; margin-bottom: 0px; background: var(--danger-bg); padding: 12px; border-radius: var(--radius-sm); border-left: 4px solid var(--danger); line-height: 1.4;"></p>
+      <p id="confirmDeleteSubmsg" style="font-size: 0.875rem; color: var(--danger); font-weight: 500; margin-bottom: 0px; background: var(--danger-bg); padding: 12px; border-radius: 12px; border-left: 4px solid var(--danger); line-height: 1.4;"></p>
       <div style="display: flex; gap: 12px; justify-content: flex-end; width: 100%;">
-        <button class="btn btn-secondary" onclick="closeConfirmDeleteModal()" style="padding: 10px 20px;">Batal</button>
-        <button id="btnConfirmDelete" class="btn btn-danger" style="padding: 10px 20px; background: var(--danger);">Hapus Permanen</button>
+        <button class="btn btn-secondary" onclick="closeConfirmDeleteModal()" style="border-radius: 12px; padding: 10px 20px; font-weight: 600;">Batal</button>
+        <button id="btnConfirmDelete" class="btn btn-danger" style="border-radius: 12px; padding: 10px 20px; background: var(--danger); font-weight: 600;">Hapus Permanen</button>
       </div>
     </div>
   </div>
@@ -179,7 +200,9 @@ function showToast(message, type = 'success') {
   const toast = document.createElement('div');
   toast.className = `toast toast-${type}`;
   
-  const icon = type === 'success' ? '✅' : '❌';
+  const icon = type === 'success' 
+    ? '<i class="fa-solid fa-circle-check" style="color: var(--success);"></i>' 
+    : '<i class="fa-solid fa-circle-xmark" style="color: var(--danger);"></i>';
   toast.innerHTML = `
     <div class="toast-icon">${icon}</div>
     <div class="toast-content">${message}</div>
@@ -230,14 +253,14 @@ function formatSize(bytes) {
  * @returns {string} Karakter emoji ikon.
  */
 function getFileIcon(mimeType) {
-  if (mimeType.startsWith('image/')) return '🖼️';
-  if (mimeType.includes('pdf')) return '📄';
-  if (mimeType.includes('word') || mimeType.includes('document')) return '📝';
-  if (mimeType.includes('sheet') || mimeType.includes('excel')) return '📊';
-  if (mimeType.includes('zip') || mimeType.includes('rar') || mimeType.includes('7z')) return '📦';
-  if (mimeType.includes('text') || mimeType.includes('plain')) return '📃';
-  if (mimeType.includes('csv')) return '📈';
-  return '📎';
+  if (mimeType.startsWith('image/')) return '<i class="fa-regular fa-image" style="color: #4285f4;"></i>';
+  if (mimeType.includes('pdf')) return '<i class="fa-regular fa-file-pdf" style="color: #db4437;"></i>';
+  if (mimeType.includes('word') || mimeType.includes('document')) return '<i class="fa-regular fa-file-word" style="color: #4285f4;"></i>';
+  if (mimeType.includes('sheet') || mimeType.includes('excel')) return '<i class="fa-regular fa-file-excel" style="color: #0f9d58;"></i>';
+  if (mimeType.includes('zip') || mimeType.includes('rar') || mimeType.includes('7z')) return '<i class="fa-regular fa-file-zipper" style="color: #f4b400;"></i>';
+  if (mimeType.includes('text') || mimeType.includes('plain')) return '<i class="fa-regular fa-file-lines" style="color: #757575;"></i>';
+  if (mimeType.includes('csv')) return '<i class="fa-solid fa-file-csv" style="color: #0f9d58;"></i>';
+  return '<i class="fa-regular fa-file" style="color: #757575;"></i>';
 }
 
 function navigateToFolder(folderId, folderName) {
@@ -319,13 +342,11 @@ async function loadFiles(parentFolderId = null) {
 
       let iconHTML, actionButtons;
       if (file.is_folder) {
-        iconHTML = `<span class="file-icon" style="font-size: 2.5rem;">📁</span>`;
+        iconHTML = `<span class="file-icon" style="font-size: 2.5rem; color: #ffca28;"><i class="fa-solid fa-folder"></i></span>`;
         actionButtons = `
-          <button class="btn btn-primary btn-block" onclick="navigateToFolder(${file.id}, '${file.original_name.replace(/'/g, "\\'")}')" style="font-size: 0.75rem; padding: 6px;">📂 Buka</button>
-          <div style="display: flex; gap: 4px;">
-            <button class="btn btn-secondary btn-block" onclick="openRenameModal(${file.id}, '${file.original_name.replace(/'/g, "\\'")}')" style="font-size: 0.75rem; padding: 6px; flex: 1;">✏️ Ubah Nama</button>
-            <button class="btn btn-danger btn-block" onclick="openConfirmDeleteModal(${file.id}, '${file.original_name.replace(/'/g, "\\'")}', true)" style="font-size: 0.75rem; padding: 6px; flex: 1;">🗑️ Hapus</button>
-          </div>
+          <button class="btn btn-primary" onclick="navigateToFolder(${file.id}, '${file.original_name.replace(/'/g, "\\'")}')" style="flex: 1; font-size: 0.75rem; padding: 0 8px; height: 34px; display: flex; align-items: center; justify-content: center; gap: 4px; border-radius: 10px;"><i class="fa-solid fa-folder-open"></i> Buka</button>
+          <button class="btn btn-secondary" onclick="openRenameModal(${file.id}, '${file.original_name.replace(/'/g, "\\'")}')" title="Ubah Nama" style="width: 34px; height: 34px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 10px;"><i class="fa-solid fa-pen-to-square"></i></button>
+          <button class="btn btn-danger" onclick="openConfirmDeleteModal(${file.id}, '${file.original_name.replace(/'/g, "\\'")}', true)" title="Hapus" style="width: 34px; height: 34px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 10px;"><i class="fa-solid fa-trash"></i></button>
         `;
       } else {
         const isImage = file.mime_type.startsWith('image/');
@@ -334,12 +355,10 @@ async function loadFiles(parentFolderId = null) {
           : `<span class="file-icon">${getFileIcon(file.mime_type)}</span>`;
 
         actionButtons = `
-          <button class="btn btn-primary btn-block" onclick="viewFile(${file.id}, '${file.mime_type}', '${file.original_name.replace(/'/g, "\\'")}')" style="font-size: 0.75rem; padding: 6px;">👁 Lihat</button>
-          <div style="display: flex; gap: 4px;">
-            <button class="btn btn-secondary btn-block" onclick="downloadFile(${file.id}, '${file.original_name.replace(/'/g, "\\'")}')" style="font-size: 0.75rem; padding: 6px; flex: 1;">⬇ Unduh</button>
-            <button class="btn btn-secondary btn-block" onclick="openRenameModal(${file.id}, '${file.original_name.replace(/'/g, "\\'")}')" style="font-size: 0.75rem; padding: 6px; flex: 1;">✏️</button>
-            <button class="btn btn-danger btn-block" onclick="openConfirmDeleteModal(${file.id}, '${file.original_name.replace(/'/g, "\\'")}', false)" style="font-size: 0.75rem; padding: 6px;">🗑️</button>
-          </div>
+          <button class="btn btn-primary" onclick="viewFile(${file.id}, '${file.mime_type}', '${file.original_name.replace(/'/g, "\\'")}')" style="flex: 1; font-size: 0.75rem; padding: 0 8px; height: 34px; display: flex; align-items: center; justify-content: center; gap: 4px; border-radius: 10px;"><i class="fa-solid fa-eye"></i> Lihat</button>
+          <button class="btn btn-secondary" onclick="downloadFile(${file.id}, '${file.original_name.replace(/'/g, "\\'")}')" title="Unduh" style="width: 34px; height: 34px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 10px;"><i class="fa-solid fa-download"></i></button>
+          <button class="btn btn-secondary" onclick="openRenameModal(${file.id}, '${file.original_name.replace(/'/g, "\\'")}')" title="Ubah Nama" style="width: 34px; height: 34px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 10px;"><i class="fa-solid fa-pen-to-square"></i></button>
+          <button class="btn btn-danger" onclick="openConfirmDeleteModal(${file.id}, '${file.original_name.replace(/'/g, "\\'")}', false)" title="Hapus" style="width: 34px; height: 34px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 10px;"><i class="fa-solid fa-trash"></i></button>
         `;
       }
 
@@ -487,7 +506,7 @@ async function viewFile(fileId, mimeType, fileName) {
       modalBody.innerHTML = `<div class="view-modal-text">${text.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>`;
     } else {
       modalBody.innerHTML = `<div style="text-align:center; color:var(--text-muted)">
-        <div style="font-size:3rem; margin-bottom:16px;">📄</div>
+        <div style="font-size:3rem; margin-bottom:16px;"><i class="fa-regular fa-file"></i></div>
         Pratinjau tidak tersedia untuk tipe file ini.<br><br>
         <button class="btn btn-primary" style="margin-top: 16px;" onclick="downloadFile(${fileId}, '${fileName.replace(/'/g, "\\'")}')">Unduh File</button>
       </div>`;
@@ -785,8 +804,8 @@ async function checkAccountStatus() {
 
 function handleAccountDeactivated() {
   document.body.innerHTML = `
-    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: var(--background); color: var(--text); font-family: 'Outfit', sans-serif; padding: 24px; text-align: center;">
-      <div style="font-size: 5rem; margin-bottom: 24px; animation: bounce 2s infinite;">🔒</div>
+    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: var(--bg); color: var(--text); font-family: 'Outfit', sans-serif; padding: 24px; text-align: center;">
+      <div style="font-size: 5rem; margin-bottom: 24px; animation: bounce 2s infinite;"><i class="fa-solid fa-lock" style="color: var(--danger);"></i></div>
       <h1 style="color: var(--danger); font-size: 2rem; font-weight: 700; margin-bottom: 12px;">Akun Dinonaktifkan</h1>
       <p style="font-size: 1.1rem; color: var(--text-muted); max-width: 500px; line-height: 1.6; margin-bottom: 32px;">
         Maaf, akun Anda telah dinonaktifkan oleh administrator. Anda tidak lagi memiliki akses ke berkas di Nitip Data Drive.
@@ -808,6 +827,23 @@ setInterval(checkAccountStatus, 10000);
 checkAccountStatus();
 
 loadFiles();
+
+// Theme Toggle Script
+const themeToggle = document.getElementById('themeToggle');
+function updateToggleIcon(theme) {
+  const icon = themeToggle.querySelector('i');
+  icon.className = theme === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+}
+const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+updateToggleIcon(currentTheme);
+
+themeToggle.addEventListener('click', () => {
+  const activeTheme = document.documentElement.getAttribute('data-theme') || 'light';
+  const newTheme = activeTheme === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', newTheme);
+  localStorage.setItem('theme', newTheme);
+  updateToggleIcon(newTheme);
+});
 </script>
 </body>
 </html>
