@@ -88,7 +88,17 @@ async function requestHandler(req, res) {
 const server = http.createServer(requestHandler);
 
 server.listen(PORT, HOST, () => {
-  console.log('Nitip Data Drive Server aktif: http://localhost:' + PORT);
+  const url = `http://localhost:${PORT}`;
+  const pad = ' '.repeat(Math.max(0, 35 - url.length));
+  
+  console.log('\n\x1b[1m\x1b[35m╭──────────────────────────────────────────────────────╮\x1b[0m');
+  console.log('\x1b[1m\x1b[35m│\x1b[0m                                                      \x1b[1m\x1b[35m│\x1b[0m');
+  console.log('\x1b[1m\x1b[35m│\x1b[0m   🚀 \x1b[1m\x1b[36mNITIP DATA DRIVE SERVER\x1b[0m                         \x1b[1m\x1b[35m│\x1b[0m');
+  console.log('\x1b[1m\x1b[35m│\x1b[0m   ✨ \x1b[37mStatus:\x1b[0m \x1b[1m\x1b[32mAKTIF & BERJALAN\x1b[0m                        \x1b[1m\x1b[35m│\x1b[0m');
+  console.log('\x1b[1m\x1b[35m│\x1b[0m                                                      \x1b[1m\x1b[35m│\x1b[0m');
+  console.log(`\x1b[1m\x1b[35m│\x1b[0m   🌐 \x1b[37mAkses Lokal:\x1b[0m \x1b[1m\x1b[33m\x1b[4m${url}\x1b[0m${pad}\x1b[1m\x1b[35m│\x1b[0m`);
+  console.log('\x1b[1m\x1b[35m│\x1b[0m                                                      \x1b[1m\x1b[35m│\x1b[0m');
+  console.log('\x1b[1m\x1b[35m╰──────────────────────────────────────────────────────╯\x1b[0m\n');
 });
 
 server.on('error', (err) => {
